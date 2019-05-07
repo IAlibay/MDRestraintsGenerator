@@ -23,7 +23,7 @@ class VectorData:
 
     def analyze(self, type, periodic=True):
         """Analyzes the data held in numpy vector"""
-        if not self.periodic:
+        if not periodic:
             self.mean = self.values.mean()
             self.stdev = self.values.std()
             self.var = self.values.var()
