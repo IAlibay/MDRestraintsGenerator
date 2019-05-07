@@ -7,6 +7,7 @@ Dependencies:
 import MDAnalysis as mda
 import numpy as np
 from scipy import stats
+from scipy.stats import circmean, circvar, circstd
 from matplotlib import pyplot as plt
 
 
@@ -20,12 +21,25 @@ class VectorData:
         """
         self.values = np.zeros(n_frames)
 
-    def analyze(self):
+    def analyze(self, type, periodic=True):
         """Analyzes the data held in numpy vector"""
-        self.mean = self.values.mean()
-        self.stdev = self.values.std()
-        self.var = self.values.var()
+        if not self.periodic:
+            self.mean = self.values.mean()
+            self.stdev = self.values.std()
+            self.var = self.values.var()
+        else:
+            p_high = 180
+            if type == "angle":
+                p_low = 0
+            else:
+                p_low = -180
+            self.mean = circmean(self.values, low=p_low, high=p_high)
+            self.stdev = circstd(self.values, low=p_low, high=p_high)
+            self.var = circvar(self.values, low=p_low, high=p_high)
+
         # Analyze normality
+        # Note: this will be broken for distributions that go over a period
+        # To be fixed
         self.anderson = stats.anderson(self.values, dist='norm')
 
     def mean_squared(self):
@@ -39,6 +53,11 @@ class VectorData:
         -----
         type : str, the data type (e.g. Bond, Dihedral_Angle_1)
         units : units of data (e.g. Å or degrees)
+
+        Notes
+        -----
+        This module will currently yield odd results for distributions
+        that go beyond a period. To be fixed in #1. - IA
         """
         # Set some parameters and prep figure
         pltparams = {'font.size': 12,
@@ -123,12 +142,12 @@ class BoreschRestraint:
     def analyze(self):
         """Function to analyse and store data"""
         # Deal with bond, angles and dihedrals
-        self.bond.data.analyze()
-        self.angles[0].data.analyze()
-        self.angles[1].data.analyze()
-        self.dihedrals[0].data.analyze()
-        self.dihedrals[1].data.analyze()
-        self.dihedrals[2].data.analyze()
+        self.bond.data.analyze(type="bond", periodic=False)
+        self.angles[0].data.analyze(type="angle", periodic=True)
+        self.angles[1].data.analyze(type="angle", periodic=True)
+        self.dihedrals[0].data.analyze(type="dihedral", periodic=True)
+        self.dihedrals[1].data.analyze(type="dihedral", periodic=True)
+        self.dihedrals[2].data.analyze(type="dihedral", periodic=True)
         self.varsum = self.__sum_var()
 
     def plot(self):
@@ -423,10 +442,12 @@ def __writeRestraints(restraint_object, index):
         rfile.write('; restraints\n')
         rfile.write('[ intermolecular_interactions ]\n')
         # Write out the bond section
-        __writeBondRestraint(restraint_object.bond, index, force_constant, rfile)
+        __writeBondRestraint(restraint_object.bond, index,
+                             force_constant, rfile)
 
         # Write out the angles
-        __writeAngleRestraint(restraint_object.angles, index, force_constant, rfile)
+        __writeAngleRestraint(restraint_object.angles, index,
+                              force_constant, rfile)
 
         # Write out the dihedrals
         __writeDihedralRestraint(restraint_object.dihedrals, index,
@@ -526,7 +547,6 @@ def FindBoreschRestraints(l_atoms, universe):
 
     # Create the distribution plots, the gmx restraint entry and closest frame
     restraints[toprank_index].plot()
-    #__writeRestraints(restraints[toprank_index])
     __writeClosestFrame(restraints[toprank_index], universe)
 
 
