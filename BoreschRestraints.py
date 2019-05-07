@@ -57,7 +57,7 @@ class VectorData:
         Notes
         -----
         This module will currently yield odd results for distributions
-        that go beyond a period. To be fixed in #1. - IA
+        that go beyond a period. To be fixed in #2. - IA
         """
         # Set some parameters and prep figure
         pltparams = {'font.size': 12,
