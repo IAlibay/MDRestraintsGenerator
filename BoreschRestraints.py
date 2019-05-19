@@ -21,7 +21,7 @@ class VectorData:
         """
         self.values = np.zeros(n_frames)
 
-    def analyze(self, type, periodic=True):
+    def analyze(self, atype, periodic=True):
         """Analyzes the data held in numpy vector"""
         if not periodic:
             self.mean = self.values.mean()
@@ -29,7 +29,7 @@ class VectorData:
             self.var = self.values.var()
         else:
             p_high = 180
-            if type == "angle":
+            if atype == "angle":
                 p_low = 0
             else:
                 p_low = -180
@@ -46,12 +46,12 @@ class VectorData:
         """Returns (value-mean)**2 """
         self.ms_values = (self.values - self.mean)**2
 
-    def plot(self, type, units):
+    def plot(self, atype, units, periodic=False):
         """Plots the data
 
         Input
         -----
-        type : str, the data type (e.g. Bond, Dihedral_Angle_1)
+        atype : str, the data type (e.g. Bond, Dihedral_Angle_1)
         units : units of data (e.g. Å or degrees)
 
         Notes
@@ -68,7 +68,19 @@ class VectorData:
 
         # Create ProbPlot plot for normality evaluation
         plt.subplot(221)
-        res = stats.probplot(self.values, dist='norm', plot=plt)
+
+        # Test for range > 180 degrees and shift for probplots
+        if periodic:
+            prob_data = self.values.copy()
+            arange = np.max(prob_data) - np.min(prob_data)
+            if arange > 180:
+                for i in range(len(prob_data)):
+                    if prob_data[i] < 0:
+                        prob_data[i] += 360
+        else:
+            prob_data = self.values.copy()
+
+        res = stats.probplot(prob_data, dist='norm', plot=plt)
 
         # Create histogram of quantity
         plt.subplot(222)
@@ -77,12 +89,12 @@ class VectorData:
         # Plot vertical line of mean value
         plt.axvline(self.mean, color='r', linestyle='dashed', linewidth=3)
         # Set plot variables and save to png
-        titlestring = f"Histogram of {type} distribution"
+        titlestring = f"Histogram of {atype} distribution"
         plt.title(titlestring)
-        xstring = f"{type} [{units}]"
+        xstring = f"{atype} [{units}]"
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
-        filename = f"{type}.png"
+        filename = f"{atype}.png"
         plt.savefig(filename, format="png")
         plt.close()
 
@@ -142,25 +154,30 @@ class BoreschRestraint:
     def analyze(self):
         """Function to analyse and store data"""
         # Deal with bond, angles and dihedrals
-        self.bond.data.analyze(type="bond", periodic=False)
-        self.angles[0].data.analyze(type="angle", periodic=True)
-        self.angles[1].data.analyze(type="angle", periodic=True)
-        self.dihedrals[0].data.analyze(type="dihedral", periodic=True)
-        self.dihedrals[1].data.analyze(type="dihedral", periodic=True)
-        self.dihedrals[2].data.analyze(type="dihedral", periodic=True)
+        self.bond.data.analyze(atype="bond", periodic=False)
+        self.angles[0].data.analyze(atype="angle", periodic=True)
+        self.angles[1].data.analyze(atype="angle", periodic=True)
+        self.dihedrals[0].data.analyze(atype="dihedral", periodic=True)
+        self.dihedrals[1].data.analyze(atype="dihedral", periodic=True)
+        self.dihedrals[2].data.analyze(atype="dihedral", periodic=True)
         self.varsum = self.__sum_var()
 
     def plot(self):
         """Function to plot all the analyzed data"""
         # Deal with bond
-        self.bond.data.plot(type="bond", units="Å")
+        self.bond.data.plot(atype="bond", units="Å", periodic=False)
         # We call them angle1 and angle2
-        self.angles[0].data.plot(type="angle1", units="degrees")
-        self.angles[1].data.plot(type="angle2", units="degrees")
+        self.angles[0].data.plot(atype="angle1", units="degrees",
+                                 periodic=True)
+        self.angles[1].data.plot(atype="angle2", units="degrees",
+                                 periodic=True)
         # Similarly dihedral1, dihedral2, dihedral3
-        self.dihedrals[0].data.plot(type="dihedral1", units="degrees")
-        self.dihedrals[1].data.plot(type="dihedral2", units="degrees")
-        self.dihedrals[2].data.plot(type="dihedral3", units="degrees")
+        self.dihedrals[0].data.plot(atype="dihedral1", units="degrees",
+                                    periodic=True)
+        self.dihedrals[1].data.plot(atype="dihedral2", units="degrees",
+                                    periodic=True)
+        self.dihedrals[2].data.plot(atype="dihedral3", units="degrees",
+                                    periodic=True)
 
     def __sum_var(self):
         """Helper function to add the variances of all varialbles.
