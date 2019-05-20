@@ -2,6 +2,9 @@
 A routine to analyse a trajectory for potential BoreschRestraint parameters.
 Dependencies:
     - MDAnalysis
+    - Scipy
+    - Numpy
+    - Matplotlib
 """
 
 import MDAnalysis as mda
