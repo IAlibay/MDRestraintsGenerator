@@ -1,5 +1,12 @@
-# BoreschRestraintsGenerator
-Python code for generating Boresch Restraints from MD simulations
+# MDRestraintsGenerator
+Python code for generating (initially Gromacs) restraints for MD simulations (usually based on existing system dynamics).
+
+The code currently only looks at BoreschRestraints, but we aim to extend functionality to include:
+
+- Hardwall restraints
+- Harmonic restraints
+- Attach Pull Restraint style restraints
+- Protein channel restraints
 
 Input options
 -------------
