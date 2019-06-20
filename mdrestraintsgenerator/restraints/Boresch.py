@@ -5,6 +5,13 @@ Dependencies:
     - Scipy
     - Numpy
     - Matplotlib
+
+To do:
+    - Rename code variables/functions to follow PEP8 convention
+    - Split out main into a "utility"
+    - Allow options for non-trajectory restrain generation
+    - Dissallow angles that lie at 180 degrees (see gmx redmine)
+    - Add numerical & analytical standard state corrections (see yank)
 """
 
 import MDAnalysis as mda
