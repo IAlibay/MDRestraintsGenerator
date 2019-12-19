@@ -56,7 +56,7 @@ class VectorData:
         """Returns (value-mean)**2 """
         self.ms_values = (self.values - self.mean)**2
 
-    def plot(self, atype, units, periodic=False):
+    def plot(self, atype, units, picked_frame, periodic=False):
         """Plots the data
 
         Input
@@ -98,6 +98,10 @@ class VectorData:
                                     edgecolor='k', alpha=0.5)
         # Plot vertical line of mean value
         plt.axvline(self.mean, color='r', linestyle='dashed', linewidth=3)
+        # Plot the picked frame if passed
+        if picked_frame is not None:
+            plt.axvline(self.values[picked_frame], color='b',
+                        linestyle='dashed', linewidth=3)
         # Set plot variables and save to png
         titlestring = f"Histogram of {atype} distribution"
         plt.title(titlestring)
@@ -172,22 +176,23 @@ class BoreschRestraint:
         self.dihedrals[2].data.analyze(atype="dihedral", periodic=True)
         self.varsum = self.__sum_var()
 
-    def plot(self):
+    def plot(self, picked_frame=None):
         """Function to plot all the analyzed data"""
         # Deal with bond
-        self.bond.data.plot(atype="bond", units="Å", periodic=False)
+        self.bond.data.plot(atype="bond", units="Å",
+                            picked_frame=picked_frame, periodic=False)
         # We call them angle1 and angle2
         self.angles[0].data.plot(atype="angle1", units="degrees",
-                                 periodic=True)
+                                 picked_frame=picked_frame, periodic=True)
         self.angles[1].data.plot(atype="angle2", units="degrees",
-                                 periodic=True)
+                                 picked_frame=picked_frame, periodic=True)
         # Similarly dihedral1, dihedral2, dihedral3
         self.dihedrals[0].data.plot(atype="dihedral1", units="degrees",
-                                    periodic=True)
+                                    picked_frame=picked_frame, periodic=True)
         self.dihedrals[1].data.plot(atype="dihedral2", units="degrees",
-                                    periodic=True)
+                                    picked_frame=picked_frame, periodic=True)
         self.dihedrals[2].data.plot(atype="dihedral3", units="degrees",
-                                    periodic=True)
+                                    picked_frame=picked_frame, periodic=True)
 
     def __sum_var(self):
         """Helper function to add the variances of all varialbles.
@@ -313,7 +318,8 @@ class BoreschRestraint:
             self.data.values[index] = self.atomgroup.dihedral.value()
 
 
-def __get_alpha_carbons(l_atom, universe, num_atoms=3, max_cutoff=9):
+def __get_nearby_anchor(l_atom, anchor_selection, universe, num_atoms=3,
+                        max_cutoff=9):
     """Helper function to get the alpha carbons nearest to l_atom.
 
     This function will first start by finding available atoms within a 5 Å
@@ -323,28 +329,31 @@ def __get_alpha_carbons(l_atom, universe, num_atoms=3, max_cutoff=9):
     Input
     -----
     l_atom : int, the index of the ligand atom
-    universe: mda.Universe object
+    anchor_selection : str, selection string for anchor-type atoms.
+    universe : mda.Universe object
     """
 
     found_atoms = 0
     cutoff = 5
 
     while found_atoms < num_atoms:
-        sel_str = f"(protein and name CA) and around {cutoff} bynum {l_atom}"
-        alpha_carbons = universe.select_atoms(sel_str)
-        found_atoms = alpha_carbons.n_atoms
+        # if protein anchor_selection will be passed as `protein and name CA`
+        sel_str = f"({anchor_selection}) and around {cutoff} bynum {l_atom}"
+        anchor_atoms = universe.select_atoms(sel_str)
+        found_atoms = anchor_atoms.n_atoms
         if found_atoms < num_atoms:
             if cutoff < max_cutoff:
                 cutoff += 1
-                warnmsg = f"Too few CAs found, expanding cutoff to {cutoff} Å"
+                warnmsg = (f"Too few atoms found, expanding cutoff to "
+                           f"{cutoff} Å")
                 print(warnmsg)
             else:
-                errmsg = "Not enough CA type atoms found"
+                errmsg = "Not enough anchor type atoms found"
                 raise RuntimeError(errmsg)
 
-    print(f"Number of CA atoms found {alpha_carbons.n_atoms}")
-
-    return alpha_carbons
+    print(f"Number of anchor atoms found {anchor_atoms.n_atoms}")
+    print(anchor_atoms.atoms)
+    return anchor_atoms
 
 
 def __get_CN_atoms(atom, universe):
@@ -362,6 +371,30 @@ def __get_CN_atoms(atom, universe):
     n_atom = universe.select_atoms(n_atom_str)
 
     return c_atom.atoms[0].id, n_atom.atoms[0].id
+
+
+def __get_bonded_atoms(atom, universe):
+    """Helper function to get heavy atoms bonded to anchor
+
+    Input
+    -----
+    atom : mda.atomgroup of the anchor atom of interest
+    universe : mda.Universe object instance
+    """
+    anchor_index = atom.index
+
+    # First get all heavy atoms bonded to the anchor and extract the first atom
+    sel_str = f"(bonded bynum {anchor_index+1}) and not name H*"
+    atg = universe.select_atoms(sel_str)
+    atom2_id = atg.atoms[0].index
+
+    # Then we expand to bonded to atom2 but not the anchor
+    sel_str = (f"(bonded bynum {atom2_id+1}) and not (bynum {anchor_index+1}) "
+               f"and not name H*")
+    atg = universe.select_atoms(sel_str)
+    atom3_id = atg.atoms[0].index
+
+    return atom2_id, atom3_id
 
 
 def __RankByVariance(restraints):
@@ -525,7 +558,7 @@ def __writeClosestFrame(restraint_object, universe):
     __writeRestraints(restraint_object, index)
 
 
-def FindBoreschRestraints(l_atoms, universe):
+def FindBoreschRestraints(l_atoms, args, universe):
     """A function to search through potential Boresch restraints.
 
     Takes in a set of ligand picked ligand atoms and then finds the best set
@@ -542,20 +575,36 @@ def FindBoreschRestraints(l_atoms, universe):
     """
 
     # Fetch a group of alpha carbons near the bond atom
-    print("Fetching carbon atoms")
-    alpha_carbons = __get_alpha_carbons(l_atoms[0], universe, num_atoms=3)
+    print("Getting binding site atoms")
+    if args.host == "protein":
+        host_anchor = __get_nearby_anchor(l_atoms[0], 'protein and name CA',
+                                          universe, num_atoms=3)
+    else:
+        host_anchor = __get_nearby_anchor(l_atoms[0], args.anchor_selection,
+                                          universe, num_atoms=3)
+
+    # debug
+    for atom in host_anchor.atoms:
+        print(atom)
+        print(atom.index)
 
     # Create BoreschRestraint object for each alpha carbon found (add to list)
     restraints = []
-    for atom in alpha_carbons.atoms:
-        # Get the attached C and N atoms
-        c_atom_id, n_atom_id = __get_CN_atoms(atom, universe)
+    for atom in host_anchor.atoms:
+        if args.host == "protein":
+            # Get the attached C and N atom ids
+            atom2, atom3 = __get_CN_atoms(atom, universe)
+        else:
+            # Get bonded heavy atom ids
+            atom2, atom3 = __get_bonded_atoms(atom, universe)
 
         # Create list and append the atom ids
         p_atoms = []
-        p_atoms.append(atom.id)
-        p_atoms.append(c_atom_id)
-        p_atoms.append(n_atom_id)
+        # For now the code assumes 1-formatting for unreasonable reasons
+        # Next change is to put everything zero formatted
+        p_atoms.append(atom.index+1)
+        p_atoms.append(atom2+1)
+        p_atoms.append(atom3+1)
 
         # Create the BoreshRestraint object
         restraints.append(BoreschRestraint(l_atoms, p_atoms, universe))
@@ -573,7 +622,7 @@ def FindBoreschRestraints(l_atoms, universe):
     toprank_index = __RankByVariance(restraints)
 
     # Create the distribution plots, the gmx restraint entry and closest frame
-    restraints[toprank_index].plot()
+    restraints[toprank_index].plot(picked_frame=toprank_index)
     __writeClosestFrame(restraints[toprank_index], universe)
 
 
@@ -590,6 +639,9 @@ if __name__ == "__main__":
         parser.add_argument('--l2', default=None)
         parser.add_argument('--l3', default=None)
         parser.add_argument('--zeroformat', default=True)
+        # Beta an argument to define the host residue
+        parser.add_argument('--host', default="protein")
+        parser.add_argument('--anchor_selection', default=None)
         args = parser.parse_args()
         return args
 
@@ -610,4 +662,8 @@ if __name__ == "__main__":
         errmsg = "Missing ligand atoms"
         raise IOError(errmsg)
 
-    FindBoreschRestraints(l_atoms=ligand_atoms, universe=u)
+    if (args.anchor_selection is None) and (args.host != "protein"):
+        errmsg = "Non-protein hosts need an anchor_selection"
+        raise IOError(errmsg)
+
+    FindBoreschRestraints(l_atoms=ligand_atoms, args=args, universe=u)
