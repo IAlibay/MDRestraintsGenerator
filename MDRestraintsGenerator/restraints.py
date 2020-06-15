@@ -19,7 +19,8 @@ class FindBoreschRestraint(AnalysisBase):
     restraint from a simulation"""
     def __init__(self, atomgroup, l_atoms=None, p_atoms=None,
                  l_selection="resname LIG",
-                 p_selection="protein and name CA", **kwargs):
+                 p_selection="protein and name CA", force_constant=10.0,
+                 **kwargs):
         """Init routine for the BoreschRestraint class.
 
         Parameters
@@ -40,6 +41,8 @@ class FindBoreschRestraint(AnalysisBase):
             "protein and name CA" will trigger a special case where alpha
             carbons will be seeked for anchor atoms and the directly bonded C
             and N atoms will be picked as the remainder of the host atoms.
+        force_constant : float
+            Force constant for the Boresch restraint (kcal/mol) [10.0]
 
         Notes
         -----
