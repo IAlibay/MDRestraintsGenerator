@@ -30,7 +30,7 @@ class VectorData:
         """
         self.values = np.zeros(n_frames)
 
-    def store(self):
+    def store(self, index):
         """Store the current timestep's value"""
         raise NotImplementedError("Only implemented in child classes")
 
@@ -151,9 +151,8 @@ class Bond(VectorData):
         self.periodic = False
         self.units = "Å"
 
-    def store(self):
+    def store(self, index):
         """Store the current timestep's bond value"""
-        index = self.atomgroup.universe.trajectory.frame
         self.values[index] = self.atomgroup.bond.length()
 
 
@@ -176,10 +175,9 @@ class Angle(VectorData):
         self.periodic = True
         self.units = "degrees"
 
-    def store(self):
+    def store(self, index):
         """Store the current timestep's angle value
         """
-        index = self.atomgroup.universe.trajectory.frame
         self.values[index] = self.atomgroup.angle.value()
 
 
@@ -206,6 +204,5 @@ class Dihedral(VectorData):
     def store(self, index):
         """Store the current timestep's dihedral value
         """
-        index = self.atomgroup.universe.trajectory.frame
         self.data.values[index] = self.atomgroup.dihedral.value()
 
