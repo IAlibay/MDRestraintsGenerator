@@ -15,6 +15,8 @@ def _write_boresch_bond(bond, index, force_constant, rfile):
     Parameters
     ----------
     bond : Bond object
+    index : int
+        index of the frame to be used
     force_constant : float
         force constant for bond strength
     rfile : file object
@@ -32,9 +34,59 @@ def _write_boresch_bond(bond, index, force_constant, rfile):
 
 
 def _write_boresch_angles(angles, index, force_constant, rfile):
+    """Helper function to write out the angle part of the boresch restraint
+
+    Parameters
+    ----------
+    angles : list of Angle objects
+    index : int
+        index of the frame to be used
+    force_constant : float
+        force constant for the angle restraint
+    rfile : file object
+        output restraint file
+    """
+    angle_fc = force_constant * 4.184
+    rfile.write('[ angles ]\n')
+    rfile.write(';   ai    aj    ak    type    thA      '
+                'fcA      thB       fcB\n')
+
+    for angle in angles:
+        atom1 = angle.atomgroup.atoms[0].ix + 1
+        atom2 = angle.atomgroup.atoms[1].ix + 1
+        atom3 = angle.atomgroup.atoms[2].ix + 1
+        val = angle.values[index]
+        rfile.write(f"{atom1:>6}{atom2:>6}{atom3:>6}       1   {val:>6.3f}"
+                    f"    0.0   {val:>6.3f}    {angle_fc:>6.2f}\n")
+
 
 
 def _write_boersch_dihedrals(dihedrals, index, force_constant, rfile):
+    """Helper function to write out the dihedral part of the boresch restraint
+
+    Parameters
+    ----------
+    dihedrals : list of Dihedral objects
+    index : int
+        index of the frame to be used
+    force_constant : float
+        force constant for the dihedral restraint
+    rfile : file object
+        output restraint file
+    """
+    angle_fc = force_constant * 4.184
+    rfile.write('[ dihedrals ]\n')
+    rfile.write(';   ai    aj    ak    al  type    phiA      fcA    '
+                'phiB      fcB\n')
+
+    for dihedral in dihedrals:
+        atom1 = dihedral.atomgroup.atoms[0].ix + 1
+        atom2 = dihedral.atomgroup.atoms[1].ix + 1
+        atom3 = dihedral.atomgroup.atoms[2].ix + 1
+        atom4 = dihedral.atomgroup.atoms[3].ix + 1
+        val = dihedral.values[index]
+        rfile.write(f"{atom1:>6}{atom2:>6}{atom3:>6}{atom4:>6}     2    "
+                    f"{val:>6.3f}    0.0    {val:>6.3f}   {angle_fc:>6.2f}\n")
 
 
 def write_boresch(atomgroup, restraint, index, force_constant=10.0):
