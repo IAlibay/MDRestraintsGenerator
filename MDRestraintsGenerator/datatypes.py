@@ -71,7 +71,6 @@ class VectorData:
         This is definitely not meant to stay here, long term this will
         get moved to a restraint specific method
         """
-        @staticmethod
         def shift_periodic(in_values, periodic=False):
             prob_data = in_values.copy()
             if periodic:
@@ -82,7 +81,6 @@ class VectorData:
                             prob_data[i] += 360
             return prob_data
 
-        @staticmethod
         def get_hist_binrange(atype, in_values):
             if atype == "bond":
                 bin_width = 0.2
@@ -146,9 +144,9 @@ class Bond(VectorData):
         atomgroup: MDAnalysis universe instance defining the bond
         """
         # Set values from VectorData
-        super(Bond, self).__init__(universe.trajectory.n_frames)
+        super(Bond, self).__init__(atomgroup.universe.trajectory.n_frames)
         # We generate the atom group from the zero-based indices
-        self.atomgroup = mda.AtomGroup([ix1, ix2], universe)
+        self.atomgroup = mda.AtomGroup([ix1, ix2], atomgroup.universe)
         self.atype = "bond"
         self.periodic = False
         self.units = "Å"
@@ -170,9 +168,9 @@ class Angle(VectorData):
         atomgroup : MDAnalysis universe instance defining the bond
         """
         # Set value from VectorData
-        super(Angle, self).__init__(universe.trajectory.n_frames)
+        super(Angle, self).__init__(atomgroup.universe.trajectory.n_frames)
         # We generate the atom group from the zero-based indices
-        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3], universe)
+        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3], atomgroup.universe)
         self.atype = "angle"
         self.periodic = True
         self.units = "degrees"
@@ -196,9 +194,10 @@ class Dihedral(VectorData):
         atomgroup : MDAnalysis universe instance defining the bond
         """
         # Set value from VectorData
-        super(Dihedral, self).__init__(universe.trajectory.n_frames)
+        super(Dihedral, self).__init__(atomgroup.universe.trajectory.n_frames)
         # We generate the atom group from the zero-based indices
-        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4], universe)
+        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4],
+                                       atomgroup.universe)
         self.atype = "dihedral"
         self.periodic = True
         self.units = "degrees"
@@ -206,7 +205,7 @@ class Dihedral(VectorData):
     def store(self, index):
         """Store the current timestep's dihedral value
         """
-        self.data.values[index] = self.atomgroup.dihedral.value()
+        self.values[index] = self.atomgroup.dihedral.value()
 
 
 class BoreschRestraint:
@@ -250,7 +249,7 @@ class BoreschRestraint:
         self.dihedrals.append(Dihedral(l_atoms[1], l_atoms[0], p_atoms[0],
                                        p_atoms[1], atomgroup))
         self.dihedrals.append(Dihedral(l_atoms[0], p_atoms[0], p_atoms[1],
-                                       p_atoms[2], universe))
+                                       p_atoms[2], atomgroup))
 
     def store_frame(self, index):
         """Function to store data for objects
@@ -317,8 +316,8 @@ class BoreschRestraint:
     def plot(self, picked_frame=None):
         """Plots all the analyzed data"""
         self.bond.plot(picked_frame=picked_frame)
-        self.angle[0].plot(picked_frame=picked_frame)
-        self.angle[1].plot(picked_frame=picked_frame)
+        self.angles[0].plot(picked_frame=picked_frame)
+        self.angles[1].plot(picked_frame=picked_frame)
         self.dihedrals[0].plot(picked_frame=picked_frame)
         self.dihedrals[1].plot(picked_frame=picked_frame)
         self.dihedrals[2].plot(picked_frame=picked_frame)

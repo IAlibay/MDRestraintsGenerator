@@ -26,7 +26,7 @@ def _write_boresch_bond(bond, index, force_constant, rfile):
     rfile.write(';    ai   aj    type  bA         kA       bB    kB\n')
     # Get index values
     atom1 = bond.atomgroup.atoms[0].ix + 1
-    atom2 = bond.atomgroup.atoms[1].ix + 2
+    atom2 = bond.atomgroup.atoms[1].ix + 1
     length = bond.values[index] / 10.0
     bond_fc = force_constant * 4.184 * 100
     rfile.write(f"{atom1:>6}{atom2:>6}    6    {length:>6.3f}      0.0   "
@@ -61,7 +61,7 @@ def _write_boresch_angles(angles, index, force_constant, rfile):
 
 
 
-def _write_boersch_dihedrals(dihedrals, index, force_constant, rfile):
+def _write_boresch_dihedrals(dihedrals, index, force_constant, rfile):
     """Helper function to write out the dihedral part of the boresch restraint
 
     Parameters

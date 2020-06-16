@@ -70,7 +70,7 @@ def _get_bonded_cn_atoms(atomgroup, anchor_ix):
         Index of the CA atom residue for which to pick up C and N atoms
     """
     anchor_ag = atomgroup.select_atoms(f'index {anchor_ix}')
-    resid = anchor_ag.resid
+    resid = anchor_ag.atoms[0].resid
     c_atom_str = f"(backbone) and (name C) and (resid {resid})"
     n_atom_str = f"(backbone) and (name N) and (resid {resid+1})"
 
@@ -137,7 +137,10 @@ def get_host_atoms(atomgroup, l_atom, p_selection, num_restraints=3,
     search_max_cutoff : float
         Maximum cutoff distance to look for host anchor atoms. [9.0]
     """
-    host_anchors = _get_host_anchors(atomgroup, l_atom, anchor_selection,
+    print(p_selection)
+
+    host_anchors = _get_host_anchors(atomgroup, l_atom,
+                                     anchor_selection=p_selection,
                                      num_atoms=num_restraints,
                                      init_cutoff=search_init_cutoff,
                                      max_cutoff=search_max_cutoff)
