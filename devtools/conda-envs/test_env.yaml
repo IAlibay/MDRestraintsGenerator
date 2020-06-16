@@ -1,10 +1,12 @@
 name: test
-channels:
+channels: conda-forge
 dependencies:
     # Base depends
   - python
   - pip
-
+  - MDAnalysis
+  - matplotlib
+  - scipy
     # Testing
   - pytest
   - pytest-cov
