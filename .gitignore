@@ -3,7 +3,7 @@ __pycache__/
 .mypy_cache
 *.pyc
 .coverage
-
+*.swp
 # data
 
 __data__/
