@@ -7,3 +7,6 @@ __pycache__/
 # data
 
 __data__/
+
+# pip stuff
+MDRestraintsGenerator.egg-info
