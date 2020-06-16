@@ -80,7 +80,7 @@ def _get_bonded_cn_atoms(atomgroup, anchor_ix):
     return c_atom.atoms[0].ix, n_atom.atoms[0].ix
 
 
-def _get_bonded_atoms(atomgroup, anchor_ix):
+def _get_bonded_atoms(atomgroup, anchor_ix, exclusion_str="and not name H*"):
     """Helper function to get heavy atoms bonded to anchor
 
     Parameters
@@ -88,16 +88,23 @@ def _get_bonded_atoms(atomgroup, anchor_ix):
     atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
         System for which we want to search for the restraint.
     anchor_ix : int
-        Index of the CA atom residue for which to pick up C and N atoms
+        Index of the CA atom residue for which to pick up bonded atoms
+    exclusion_str : str
+        Exclusion selection string to not pick up certain types of atoms.
+        ['and not name H*']
     """
     # First get all heavy atoms bonded to the anchor (and not hydrogen)
-    sel_str = f"(bonded index {anchor_ix}) and not name H*"
+    sel_str = f"(bonded index {anchor_ix}) {exclusion_str}"
     atg1 = atomgroup.select_atoms(sel_str)
+
+    if len(atg1.atoms) == 0:
+        errmsg = "could not find binding atoms"
+        raise RuntimeError(errmsg)
     
     # Loop over found indexes and see if any of them have imoqie bpmded atoms
-    for index in [ix for ix in atg.ix]:
-        sel_str = (f"(bonded index {ix}) and not (index {anchor_ix}) and not "
-                   f"name H*")
+    for index in [ix for ix in atg1.atoms.ix]:
+        sel_str = (f"(bonded index {index}) and not (index {anchor_ix}) "
+                   f"{exclusion_str}")
         atg2 = atomgroup.select_atoms(sel_str)
         if atg2.n_atoms > 0:
             break
@@ -105,7 +112,7 @@ def _get_bonded_atoms(atomgroup, anchor_ix):
     try:
         return index, atg2.atoms[0].ix
     except IndexError:
-        errmsg = "could not find p_atom[2]"
+        errmsg = "could not find third atom"
         raise RuntimeError(errmsg) from None
 
 
