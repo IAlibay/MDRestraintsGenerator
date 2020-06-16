@@ -19,6 +19,13 @@ The code currently only looks at BoreschRestraints, but we aim to extend to:
 Note: This is considered to be pre-production code, a lot is left to do and
 major changes will happen at any time.
 
+## How to use
+
+Currently implemented; FindBoreschRestraint
+
+This works as a usual AnalysisBase object, please see `scripts` for a basic
+usage example.
+
 ### Dependencies
 
 - MDAnalysis
