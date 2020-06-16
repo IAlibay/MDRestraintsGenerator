@@ -17,6 +17,8 @@ import MDAnalysis as mda
 import numpy as np
 from scipy import stats
 from scipy.stats import circmean, circvar, circstd
+import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 
 
@@ -123,25 +125,25 @@ class VectorData:
                         label='picked')
 
         # Set plot variables and save to png
-        titlestring = f"Histogram of {atype} distribution"
+        titlestring = f"Histogram of {self.atype} distribution"
         plt.title(titlestring)
-        xstring = f"{atype} [{units}]"
+        xstring = f"{self.atype} [{self.units}]"
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
-        filename = f"{atype}.png"
+        filename = f"{self.atype}.png"
         plt.savefig(filename, format="png")
         plt.close()
 
 
 class Bond(VectorData):
-    def __init__(self, ix1, ix2, universe):
+    def __init__(self, ix1, ix2, atomgroup):
         """Initialise the Bond object.
 
         Input
         -----
         ix1 : index of the first atom involved in bond
         ix2 : index of the second atom involve in bond
-        universe: MDAnalysis universe instance defining the bond
+        atomgroup: MDAnalysis universe instance defining the bond
         """
         # Set values from VectorData
         super(Bond, self).__init__(universe.trajectory.n_frames)
@@ -157,7 +159,7 @@ class Bond(VectorData):
 
 
 class Angle(VectorData):
-    def __init__(self, ix1, ix2, ix3, universe):
+    def __init__(self, ix1, ix2, ix3, atomgroup):
         """Initialise the Angle object.
 
         Input
@@ -165,7 +167,7 @@ class Angle(VectorData):
         ix1 : index of the first atom involved in angle
         ix2 : index of the second atom involved in angle
         ix3 : index of third atom involved in angle
-        universe: MDAnalysis universe instance defining the bond
+        atomgroup : MDAnalysis universe instance defining the bond
         """
         # Set value from VectorData
         super(Angle, self).__init__(universe.trajectory.n_frames)
@@ -182,7 +184,7 @@ class Angle(VectorData):
 
 
 class Dihedral(VectorData):
-    def __init__(self, ix1, ix2, ix3, ix4, universe):
+    def __init__(self, ix1, ix2, ix3, ix4, atomgroup):
         """Initialise the Dihedral object.
 
         Input
@@ -191,12 +193,12 @@ class Dihedral(VectorData):
         ix2 : index of the second atom involved in angle
         ix3 : index of third atom involved in angle
         ix4 : index of the fourth atom involved in angle
-        universe: MDAnalysis universe instance defining the bond
+        atomgroup : MDAnalysis universe instance defining the bond
         """
         # Set value from VectorData
         super(Dihedral, self).__init__(universe.trajectory.n_frames)
         # We generate the atom group from the zero-based indices
-        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4], universe)a
+        self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4], universe)
         self.atype = "dihedral"
         self.periodic = True
         self.units = "degrees"
@@ -205,4 +207,119 @@ class Dihedral(VectorData):
         """Store the current timestep's dihedral value
         """
         self.data.values[index] = self.atomgroup.dihedral.value()
+
+
+class BoreschRestraint:
+    """A class to store and analyze the bond/angle/diehdral information related
+    to a given Boresch restraint."""
+    def __init__(self, atomgroup, l_atoms, p_atoms, n_frames):
+        """Init routine for the BoreschRestraint class.
+
+        Parameters
+        ----------
+        atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
+            System for which we want to search for the restraint.
+        l_atoms : list (size 3) of ints
+            Indices of the ligand atoms.
+        p_atoms : list (size 3) of int
+            Indices of the protein atoms.
+        n_frames : int
+            Number of frames to store data for.
+        
+        Note
+        ----
+        Bond is defined by (l_atoms[0], p_atoms[0])
+        Angles are defined by:
+            (l_atoms[1], l_atoms[0], p_atoms[0])
+            (l_atoms[0], p_atoms[0], p_atoms[1])
+        Dihedrals are defined by:
+            (l_atoms[2], l_atoms[1], l_atoms[0], p_atoms[0])
+            (l_atoms[1], l_atoms[0], p_atoms[0], p_atoms[1])
+            (l_atoms[0], p_atoms[0], p_atoms[1], p_atoms[2])
+        """
+        # Create the bond, angle and dihedral objects
+        self.bond = Bond(l_atoms[0], p_atoms[0], atomgroup)
+        self.angles = []
+        self.angles.append(Angle(l_atoms[1], l_atoms[0], p_atoms[0],
+                                 atomgroup))
+        self.angles.append(Angle(l_atoms[0], p_atoms[0], p_atoms[1],
+                                 atomgroup))
+        self.dihedrals = []
+        self.dihedrals.append(Dihedral(l_atoms[2], l_atoms[1], l_atoms[0],
+                                       p_atoms[0], atomgroup))
+        self.dihedrals.append(Dihedral(l_atoms[1], l_atoms[0], p_atoms[0],
+                                       p_atoms[1], atomgroup))
+        self.dihedrals.append(Dihedral(l_atoms[0], p_atoms[0], p_atoms[1],
+                                       p_atoms[2], universe))
+
+    def store_frame(self, index):
+        """Function to store data for objects
+
+        Paramters
+        ---------
+        index : current frame number
+        """
+        self.bond.store(index)
+
+        for angle in self.angles:
+            angle.store(index)
+
+        for dihedral in self.dihedrals:
+            dihedral.store(index)
+
+    def analyze(self):
+        """Function to analyze boresch restraint object data"""
+        self.bond.analyze()
+
+        for angle in self.angles:
+            angle.analyze()
+
+        for dihedral in self.dihedrals:
+            dihedral.analyze()
+
+        self.varsum = self._sum_var()
+
+    def _sum_var(self):
+        """Helper function to add the variances of all varialbles.
+
+        Note: as an initial attempt, we assume all variances to be independent
+        (which is known to not be the case). In the future we shall attempt to
+        account for the covariance between the bonds/angles.
+        """
+        combined_variance = (self.bond.var +
+                             self.angles[0].var +
+                             self.angles[1].var +
+                             self.dihedrals[0].var +
+                             self.dihedrals[1].var +
+                             self.dihedrals[2].var)
+        return combined_variance
+
+    def rmsd(self):
+        """Helper function to calculate the rmsd of all frames based on the
+        mean BoreschRestraint bond/angles.
+        """
+        self.bond.mean_squared()
+        self.angles[0].mean_squared()
+        self.angles[1].mean_squared()
+        self.dihedrals[0].mean_squared()
+        self.dihedrals[1].mean_squared()
+        self.dihedrals[2].mean_squared()
+
+        self.rmsd_values = (self.bond.ms_values +
+                            self.angles[0].ms_values +
+                            self.angles[1].ms_values +
+                            self.dihedrals[0].ms_values +
+                            self.dihedrals[1].ms_values +
+                            self.dihedrals[2].ms_values)
+
+        self.rmsd_values = np.sqrt(self.rmsd_values / 6)
+
+    def plot(self, picked_frame=None):
+        """Plots all the analyzed data"""
+        self.bond.plot(picked_frame=picked_frame)
+        self.angle[0].plot(picked_frame=picked_frame)
+        self.angle[1].plot(picked_frame=picked_frame)
+        self.dihedrals[0].plot(picked_frame=picked_frame)
+        self.dihedrals[1].plot(picked_frame=picked_frame)
+        self.dihedrals[2].plot(picked_frame=picked_frame)
 
