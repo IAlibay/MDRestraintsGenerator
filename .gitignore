@@ -3,7 +3,10 @@ __pycache__/
 .mypy_cache
 *.pyc
 .coverage
-
+*.swp
 # data
 
 __data__/
+
+# pip stuff
+MDRestraintsGenerator.egg-info
