@@ -9,7 +9,6 @@ from .datafiles import T4_TPR, T4_XTC
 from numpy.testing import assert_almost_equal
 import warnings
 import pytest
-import sys
 
 
 @pytest.fixture(scope='module')
