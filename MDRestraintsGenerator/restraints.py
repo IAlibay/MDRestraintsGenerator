@@ -123,9 +123,18 @@ class FindBoreschRestraint(AnalysisBase):
 
         # Rank restraints based on how much they fluctuate
         # Assign the best restraint
-        var_list = [restraint.varsum for restraint in self._restraints]
+        # Note: to avoid co-linearity we drop anything where the mean angles
+        # are < 25 or > 155 degrees (assign it a var of over 9 thousand)
+        var_list = []
+
+        for restraint in self._restraints:
+            var = restraint.varsum
+            for angle in restraint.angles:
+                if angle.mean < 25 or angle.mean > 155:
+                    var += 9000
+            var_list.append(var)
+
         self.restraint = self._restraints[var_list.index(min(var_list))]
 
         # Get rmsd & populate min frame/rmsd
         self.restraint.rmsd()
-

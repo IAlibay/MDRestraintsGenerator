@@ -57,3 +57,9 @@ if __name__ == "__main__":
 
     # Write out the intermolecular section to a topology
     boresch.restraint.write()
+
+    dG_off = boresch.restraint.standard_state()
+
+    print(f"dG_off: {dG_off}, dG_on: {-dG_off}")
+
+
