@@ -9,7 +9,6 @@ import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from .datatypes import BoreschRestraint
 from .utils import get_host_atoms
-from .io import write_boresch
 import numpy as np
 import warnings
 
@@ -105,44 +104,28 @@ class FindBoreschRestraint(AnalysisBase):
                     search_max_cutoff=self.search_max_cutoff)
 
         # Empty container for all the restraints
-        self.restraints = []
+        self._restraints = []
 
         for p_atm in self.p_atoms:
-            self.restraints.append(BoreschRestraint(self.atomgroup,
-                                                    self.l_atoms, p_atm,
-                                                    self.n_frames))
+            self._restraints.append(BoreschRestraint(self.atomgroup,
+                                                     self.l_atoms, p_atm,
+                                                     self.n_frames))
 
     def _single_frame(self):
         """Loops through trajectory and aggregates necessary data"""
-        for restraint in self.restraints:
+        for restraint in self._restraints:
             restraint.store_frame(self._frame_index)
 
     def _conclude(self):
         """Analyses and then outputs the best Boresch restraint"""
-        for restraint in self.restraints:
+        for restraint in self._restraints:
             restraint.analyze()
 
         # Rank restraints based on how much they fluctuate
-        var_list = [restraint.varsum for restrain in self.restraints]
-        self.best_restraint_index = var_list.index(min(var_list))
+        # Assign the best restraint
+        var_list = [restraint.varsum for restraint in self._restraints]
+        self.restraint = self._restraints[var_list.index(min(var_list))]
 
-        # Get the closest frame to the average for the topranked restraint
-        # Get rmsd of all frames from mean
-        self.min_rmsd, self.min_frame = self._get_min_frame(self.restraints,
-                self.best_restraint_index)
+        # Get rmsd & populate min frame/rmsd
+        self.restraint.rmsd()
 
-        # Plot out the statistics of the restraint
-        self.restraints[self.best_restraint_index].plot(self.min_frame)
-
-        # Write out the Boresch restraint
-        write_boresch(self.atomgroup,
-                      self.restraints[self.best_restraint_index],
-                      self.min_frame)
-
-    @staticmethod
-    def _get_min_frame(restraints, index):
-        restraints[index].rmsd()
-        min_rmsd = np.min(restraints[index].rmsd_values)
-        frame = restraints[index].rmsd_values.argmin()
-
-        return min_rmsd, frame
