@@ -138,6 +138,7 @@ class VectorData:
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
         filename = f"{self.filename}.png"
+        plt.legend(loc="best")
         plt.savefig(filename, format="png")
         plt.close()
 
