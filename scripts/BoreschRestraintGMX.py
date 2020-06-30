@@ -46,8 +46,14 @@ if __name__ == "__main__":
     u = mda.Universe(args.top, args.traj)
 
     # Create the boresch finder analysis object
-    find = FindBoreschRestraint(u, l_atoms=ligand_atoms,
-                                p_selection=args.host_selection)
+    boresch = FindBoreschRestraint(u, l_atoms=ligand_atoms,
+                                  p_selection=args.host_selection)
 
     # Run the restraint analysis
-    find.run()
+    boresch.run()
+
+    # Plot out the statistics
+    boresch.plot()
+
+    # Write out the intermolecular section to a topology
+    boresch.write()

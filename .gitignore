@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .coverage
 *.swp
+*.npz
 # data
 
 __data__/
