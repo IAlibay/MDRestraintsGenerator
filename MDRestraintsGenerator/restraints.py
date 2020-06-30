@@ -129,9 +129,3 @@ class FindBoreschRestraint(AnalysisBase):
         # Get rmsd & populate min frame/rmsd
         self.restraint.rmsd()
 
-        # Plot out the statistics of the restraint
-        # By default self.restraint.min_frame is used
-        self.restraint.plot()
-
-        self.restraint.write()
-

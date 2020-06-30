@@ -53,7 +53,7 @@ if __name__ == "__main__":
     boresch.run()
 
     # Plot out the statistics
-    boresch.plot()
+    boresch.restraint.plot()
 
     # Write out the intermolecular section to a topology
-    boresch.write()
+    boresch.restraint.write()

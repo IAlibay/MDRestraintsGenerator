@@ -20,6 +20,8 @@ def test_basic_regression(tmpdir):
 
     with tmpdir.as_cwd():
         find.run()
+
+        find.restraint.write()
         
         u_gro = mda.Universe('ClosestRestraintFrame.gro')
         u_gro_ref = mda.Universe(T4_OGRO)
