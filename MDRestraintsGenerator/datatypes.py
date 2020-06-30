@@ -95,6 +95,14 @@ class VectorData:
                 bin_width = 4
                 return np.arange(-180, 180 + bin_width, bin_width)
 
+
+        try:
+            self.mean
+        except AttributeError:
+            raise AttributeError("vector object has not been analyzed yet")
+
+
+
         # Set some parameters and prep figure
         pltparams = {'font.size': 12,
                      'axes.titlesize': 16,
@@ -129,13 +137,14 @@ class VectorData:
         xstring = f"{self.atype} [{self.units}]"
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
-        filename = f"{self.atype}.png"
+        filename = f"{self.filename}.png"
+        plt.legend(loc="best")
         plt.savefig(filename, format="png")
         plt.close()
 
 
 class Bond(VectorData):
-    def __init__(self, ix1, ix2, atomgroup, n_frames):
+    def __init__(self, ix1, ix2, atomgroup, n_frames, suffix_index=1):
         """Initialise the Bond object.
 
         Input
@@ -148,6 +157,8 @@ class Bond(VectorData):
             MDAnalysis object containing the bond
         n_frames : int
             number of frames restraint object will store
+        suffix_index : int
+            number to add as a filename index when plotting [1]
         """
         # Set values from VectorData
         super(Bond, self).__init__(n_frames)
@@ -156,6 +167,7 @@ class Bond(VectorData):
         self.atype = "bond"
         self.periodic = False
         self.units = "Å"
+        self.filename = f"{self.atype}_{suffix_index}"
 
     def store(self, index):
         """Store the current timestep's bond value"""
@@ -163,7 +175,7 @@ class Bond(VectorData):
 
 
 class Angle(VectorData):
-    def __init__(self, ix1, ix2, ix3, atomgroup, n_frames):
+    def __init__(self, ix1, ix2, ix3, atomgroup, n_frames, suffix_index=1):
         """Initialise the Angle object.
 
         Input
@@ -178,6 +190,8 @@ class Angle(VectorData):
             MDAnalysis object containing the angle
         n_frames : int
             number of frames restraint object will store
+        suffix_index : int
+            number to add as a filename index when plotting [1]
         """
         # Set value from VectorData
         super(Angle, self).__init__(n_frames)
@@ -186,6 +200,7 @@ class Angle(VectorData):
         self.atype = "angle"
         self.periodic = True
         self.units = "degrees"
+        self.filename = f"{self.atype}_{suffix_index}"
 
     def store(self, index):
         """Store the current timestep's angle value
@@ -194,7 +209,8 @@ class Angle(VectorData):
 
 
 class Dihedral(VectorData):
-    def __init__(self, ix1, ix2, ix3, ix4, atomgroup, n_frames):
+    def __init__(self, ix1, ix2, ix3, ix4, atomgroup, n_frames,
+                 suffix_index=1):
         """Initialise the Dihedral object.
 
         Input
@@ -211,6 +227,8 @@ class Dihedral(VectorData):
             MDAnalysis object containing the dihedral
         n_frames : int
             number of frames restraint object will store
+        suffix_index : int
+            number to add as a filename index when plotting [1]
         """
         # Set value from VectorData
         super(Dihedral, self).__init__(n_frames)
@@ -220,6 +238,7 @@ class Dihedral(VectorData):
         self.atype = "dihedral"
         self.periodic = True
         self.units = "degrees"
+        self.filename = f"{self.atype}_{suffix_index}"
 
     def store(self, index):
         """Store the current timestep's dihedral value
@@ -269,16 +288,19 @@ class BoreschRestraint:
         self.bond = Bond(l_atoms[0], p_atoms[0], atomgroup, self.n_frames)
         self.angles = []
         self.angles.append(Angle(l_atoms[1], l_atoms[0], p_atoms[0],
-                                 atomgroup, self.n_frames))
+                                 atomgroup, self.n_frames, suffix_index=1))
         self.angles.append(Angle(l_atoms[0], p_atoms[0], p_atoms[1],
-                                 atomgroup, self.n_frames))
+                                 atomgroup, self.n_frames, suffix_index=2))
         self.dihedrals = []
         self.dihedrals.append(Dihedral(l_atoms[2], l_atoms[1], l_atoms[0],
-                                       p_atoms[0], atomgroup, self.n_frames))
+                                       p_atoms[0], atomgroup, self.n_frames,
+                                       suffix_index=1))
         self.dihedrals.append(Dihedral(l_atoms[1], l_atoms[0], p_atoms[0],
-                                       p_atoms[1], atomgroup, self.n_frames))
+                                       p_atoms[1], atomgroup, self.n_frames,
+                                       suffix_index=2))
         self.dihedrals.append(Dihedral(l_atoms[0], p_atoms[0], p_atoms[1],
-                                       p_atoms[2], atomgroup, self.n_frames))
+                                       p_atoms[2], atomgroup, self.n_frames,
+                                       suffix_index=3))
 
     def store_frame(self, index):
         """Function to store data for objects
@@ -361,7 +383,7 @@ class BoreschRestraint:
         if frame is None:
             try:
                 frame = self.min_frame
-            except NameError:
+            except AttributeError:
                 pass
 
         self.bond.plot(picked_frame=frame)
@@ -389,7 +411,7 @@ class BoreschRestraint:
         if frame is None:
             try:
                 frame = self.min_frame
-            except NameError:
+            except AttributeError:
                 raise RuntimeError("no frame defined for writing")
 
         if outtype is not "GMX":
