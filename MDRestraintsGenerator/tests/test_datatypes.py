@@ -72,3 +72,27 @@ def test_Boresch_plotting_notanalysed(tmpdir, u):
 
     with pytest.raises(AttributeError, match=errmsg):
         boresch.plot()
+
+
+def test_Boresch_write_noframe(u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    errmsg = "no frame defined for writing"
+
+    with pytest.raises(RuntimeError, match=errmsg):
+        boresch.write()
+
+
+def test_Boresch_write_wrongtype(u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    errmsg = "not implemented yet"
+
+    with pytest.raises(RuntimeError, match=errmsg):
+        boresch.write(frame=0, outtype="AMBER")
