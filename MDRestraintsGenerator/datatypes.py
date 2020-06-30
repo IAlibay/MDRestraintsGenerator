@@ -417,6 +417,15 @@ class BoreschRestraint:
         if outtype is not "GMX":
             raise RuntimeError(f"{outtype} not implemented yet")
 
+        # Final check for co-linearity
+        for angle in self.angles:
+            if (angle.values[frame] < 25) or (angle.values[frame] > 155):
+                errmsg = (f"picked frame contains angle near colinearity ",
+                          f"value: {angle.value[frame]}\n",
+                          f"This is a bad idea, choose another set of ",
+                          f"restraint atoms.")
+                raise RuntimeError(errmsg)
+
         self._write_gmx(index=frame, force_constant=force_constant)
 
     def _write_gmx(self, index, force_constant):
@@ -443,3 +452,66 @@ class BoreschRestraint:
             writers._write_dihedral_header(rfile)
             for dihedral in self.dihedrals:
                 writers._write_dihedral(dihedral, index, force_constant, rfile)
+
+    def standard_state(self, frame=None, force_constant=10.0,
+                       temperature=298.15, calc_type="analytical"):
+        """Reports the dG_off standard state correction energy for the
+        given frame.
+
+        Input
+        -----
+        frame : int
+            index of frame to write out, will default to frame closest to mean.
+        force_constant : float
+            strength of the Boresch restraint [10.0 kcal/mol]
+        temperature : float
+            system temperature in Kelvins [298.15]
+        calc_type : str
+            calculation type, currently only the analytical correction is
+            supported but in the future we'd like to add the numerical
+            approaches used by Yank.
+        """
+        if frame is None:
+            try:
+                frame = self.min_frame
+            except AttributeError:
+                raise RuntimeError("no frame defined to get energy for")
+
+
+        if calc_type is not "analytical":
+            raise NotImplementedError(f"{calc_type} is not implemented")
+        else:
+            return self._analytical_energy(frame, force_constant, temperature)
+
+    def _analytical_energy(self, frame, force_constant, temperature):
+        """Get the dG_off standard state correction via the Boresch
+        analytical method.
+
+        Acknowledgement
+        ---------------
+        Based on an original script by Matteo Aldeghi.
+
+        Notes
+        -----
+        This is known to be inaccurate (see Yank).
+        """
+        Gas_K = (8.314472*0.001) / 4.184 # Gas constant kcal/mol/K
+        StandardV = 1.66 # standard volume in nm^3
+
+        rAa = self.bond.values[frame] / 10 # convert to nm
+        thA = np.radians(self.angles[0].values[frame])
+        thB = np.radians(self.angles[1].values[frame])
+
+        frc_bond = force_constant * 100
+        frc_angle = force_constant
+        frc_dihe = force_constant
+
+        numerator = 8.0 * (np.pi**2) * StandardV
+        numerator *= ((frc_bond * (frc_angle ** 2) * (frc_dihe ** 3)) ** 0.5)
+        denominator = (rAa **2) * np.sin(thA) * np.sin(thB)
+        denominator *= ((2 * np.pi * Gas_K * temperature) ** 3)
+
+        dG = - Gas_K * temperature * np.log(numerator/denominator)
+
+        return dG
+

@@ -25,10 +25,11 @@ def test_basic_regression(tmpdir, u):
         find.run()
 
         find.restraint.write()
+        dG = find.restraint.standard_state()
         
         u_gro = mda.Universe('ClosestRestraintFrame.gro')
         u_gro_ref = mda.Universe(T4_OGRO)
 
         assert_almost_equal(u_gro.atoms.positions, u_gro_ref.atoms.positions)
         assert filecmp.cmp(T4_OTOP, 'BoreschRestraint.top')
-
+        assert_almost_equal(dG, -6.592, 2)
