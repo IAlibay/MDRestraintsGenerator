@@ -14,9 +14,11 @@ matrix:
 
 
     - os: linux
+      dist: bionic
       language: generic  # No need to set Python version since its conda
       env: PYTHON_VER=3.6
     - os: linux
+      dist: bionic
       language: generic
       env: PYTHON_VER=3.7
 
