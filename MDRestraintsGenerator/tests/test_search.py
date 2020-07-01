@@ -67,8 +67,21 @@ def test_bonded_errors(u, errmsg, exclusion_str):
     with pytest.raises(RuntimeError, match=errmsg):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
+
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 
     assert l_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
                        [2607, 2606, 2608]]
+
+
+def test_find_atoms_notimplemented_method(u):
+    errmsg = "foo is not implemented yet"
+    with pytest.raises(NotImplementedError, match=errmsg):
+        l_atoms = search.find_ligand_atoms(u, method="foo")
+
+
+def test_find_atoms_empty_align_selection(u):
+    errmsg = "no atoms matchin"
+    with pytest.raises(RuntimeError, match=errmsg):
+        l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")

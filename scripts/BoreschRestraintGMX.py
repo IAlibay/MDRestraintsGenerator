@@ -7,8 +7,10 @@ Usage:
                                   --host_selection "protein and name CA"
 """
 import MDAnalysis as mda
+from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
 import argparse
+import warnings
 
 
 if __name__ == "__main__":
@@ -30,6 +32,8 @@ if __name__ == "__main__":
         parser.add_argument('--l3', default=None,
                             help=('zero formatted index of the ligand '
                                   'dihedral forming atom'))
+        parser.add_argument('--ligand_selection', default="resname LIG",
+                            help='ligand selection string')
         parser.add_argument('--host_selection', default="protein and name CA",
                             help='host atom selection string')
         args = parser.parse_args()
@@ -37,17 +41,28 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    ligand_atoms = [int(args.l1), int(args.l2), int(args.l3)]
-
-    if None in ligand_atoms:
-        errmsg = "Missing ligand atoms"
-        raise IOError(errmsg)
+    ligand_atoms = [ [int(args.l1), int(args.l2), int(args.l3)] ]
 
     u = mda.Universe(args.top, args.traj)
 
+    if None in ligand_atoms[0]:
+        wmsg = "Missing ligand atoms, will search for suitable atoms instead"
+        warnings.warn(wmsg)
+        # by default we will exclude H* named atoms
+        l_sel = f"{args.ligand_selection} and not name H*"
+        # We align based on the host selection
+        ligand_atoms = search.find_ligand_atoms(u, l_selection=l_sel,
+                                                p_align=args.host_selection)
+
+    # find protein atoms
+    atom_set = []
+    for l_atoms in ligand_atoms:
+        p_atoms = search.find_host_atoms(u, l_atoms[0],
+                                         p_selection=args.host_selection)
+        atom_set.extend([(l_atoms, p) for p in p_atoms])
+
     # Create the boresch finder analysis object
-    boresch = FindBoreschRestraint(u, l_atoms=ligand_atoms,
-                                  p_selection=args.host_selection)
+    boresch = FindBoreschRestraint(u, atom_set)
 
     # Run the restraint analysis
     boresch.run()
@@ -61,5 +76,3 @@ if __name__ == "__main__":
     dG_off = boresch.restraint.standard_state()
 
     print(f"dG_off: {dG_off}, dG_on: {-dG_off}")
-
-
