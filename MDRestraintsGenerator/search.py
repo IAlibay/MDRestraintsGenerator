@@ -226,7 +226,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         raise RuntimeError(errmsg)
 
     # Align to initial frame first
-    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align)
+    prealigner = align.AlignTraj(copy_u, atomgroup.universe, select=p_align)
     prealigner.run()
 
     # Get the reference frame as the average structure
