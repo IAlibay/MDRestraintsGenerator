@@ -217,7 +217,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
     # Let's not alter the original trajectory
     copy_u = atomgroup.universe.copy()
     ligand = copy_u.select_atoms(l_selection)
-    #copy_u.transfer_to_memory()
+    copy_u.transfer_to_memory()
 
     # if alignment selection is empty then raise error and let users know
     if len(copy_u.select_atoms(p_align)) == 0:
@@ -226,16 +226,14 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         raise RuntimeError(errmsg)
 
     # Align to initial frame first
-    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align,
-                                 in_memory=True).run()
+    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align).run()
 
     # Get the reference frame as the average structure
     ref_coords = copy_u.trajectory.timeseries().mean(axis=1)
     ref = mda.Merge(copy_u.atoms).load_new(ref_coords[:, None, :], order="afc")
 
     # Align to the average coordiantes
-    aligner = align.AlignTraj(copy_u, ref, select=p_align,
-                              in_memory=True).run()
+    aligner = align.AlignTraj(copy_u, ref, select=p_align).run()
 
     rmsfer = RMSF(ligand).run()
 
