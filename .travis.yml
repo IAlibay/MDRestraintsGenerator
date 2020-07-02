@@ -15,24 +15,10 @@ matrix:
 
     - os: linux
       dist: bionic
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-9
-          packages:
-            - clang-9 
       language: generic  # No need to set Python version since its conda
       env: PYTHON_VER=3.6
     - os: linux
       dist: bionic
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-9
-          packages:
-            - clang-9
       language: generic
       env: PYTHON_VER=3.7
 
@@ -53,6 +39,8 @@ install:
   - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
     # Activate the test environment
   - conda activate test
+    # Get required conda packages
+  - conda install -c conda-forge MDAnalysis numpy scipy matplotlib
     # Build and install package
   - python setup.py develop --no-deps
 
