@@ -215,7 +215,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         Selection string to align host.
     """
     # Let's not alter the original trajectory
-    copy_u = atomgroup.universe.copy()
+    copy_u = atomgroup.universe
     ligand = copy_u.select_atoms(l_selection)
     copy_u.transfer_to_memory()
 
