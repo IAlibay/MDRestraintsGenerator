@@ -41,10 +41,12 @@ def test_basic_regression(tmpdir, u):
         assert_almost_equal(dG, -6.592, 2)
 
 
-def test_aligntraj(u):
+def test_aligntraj(tmpdir):
     """AlignTraj is failing, so let's test it here"""
-    copy_u = u.copy()
-    prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA")
+    copy_u = mda.Universe(T4_TPR, T4_XTC)
+    with tmpdir.as_cwd():
+        prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA",
+                                     in_memory=True)
     prealigner.run()
 
     assert 1 == 1
