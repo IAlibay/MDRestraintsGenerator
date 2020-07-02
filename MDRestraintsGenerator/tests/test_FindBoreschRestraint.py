@@ -3,6 +3,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 """
 
 import MDAnalysis as mda
+from MDAnalysis.analysis import align
 from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
@@ -38,6 +39,15 @@ def test_basic_regression(tmpdir, u):
         assert_almost_equal(u_gro.atoms.positions, u_gro_ref.atoms.positions)
         assert filecmp.cmp(T4_OTOP, 'BoreschRestraint.top')
         assert_almost_equal(dG, -6.592, 2)
+
+
+def test_aligntraj(u):
+    """AlignTraj is failing, so let's test it here"""
+    copy_u = u.copy()
+    prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA")
+    prealigner.run()
+
+    assert 1 == 1
 
 
 def test_basic_regression_ligand_search(u):
