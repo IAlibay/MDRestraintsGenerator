@@ -8,7 +8,6 @@ Contains main restraint object classes
 import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from .datatypes import BoreschRestraint
-from .utils import get_host_atoms
 import numpy as np
 import warnings
 
@@ -16,43 +15,20 @@ import warnings
 class FindBoreschRestraint(AnalysisBase):
     """MDAnalysis.analysis.AnalysisBase derived class to generate a Boresch
     restraint from a simulation"""
-    def __init__(self, atomgroup, l_atoms=None, p_atoms=None,
-                 l_selection="resname LIG",
-                 p_selection="protein and name CA", force_constant=10.0,
-                 protein_routine=True, search_init_cutoff=5.0,
-                 search_max_cutoff=9.0,
-                 **kwargs):
+    def __init__(self, atomgroup, atom_set,
+                 force_constant=10.0, **kwargs):
         """Init routine for the BoreschRestraint class.
 
         Parameters
         ----------
         atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
             Defines the region we want to generate a restraint for.
-        l_atoms : list (size 3) of atomgroups [None]
-            Defines ligand atoms.
-        p_atoms : list of lists (size 3) of atomgroups [None]
-            Defines the protein atoms to be investigated
-        l_selection : str
-            Selection string to define which ligand atoms can be chosen for
-            consideration as restraint anchor atoms.
-            NOTE: Using this is currently unsupported!
-        p_selection : str
-            Selection string to define which protein atoms can be chosen for
-            consideration as restraint anchor atoms. The default
-            "protein and name CA" will trigger a special case where alpha
-            carbons will be seeked for anchor atoms and the directly bonded C
-            and N atoms will be picked as the remainder of the host atoms.
+        atom_set : list of sets
+            A list of set of pairs of ligand (l_atoms) and protein (p_atoms)
+            atom lists (size 3) with the following order:
+            [ (l_atoms, p_atoms).. ]. Note: this is messy
         force_constant : float
             Force constant for the Boresch restraint (kcal/mol) [10.0]
-        protein_routine : bool
-            Option to turn off the C/N atom gathering routine if `p_selection`
-            is passed as "protein and name CA".
-        search_init_cutoff : float
-            Minimum cutoff distance to look for host anchor atoms. Used if
-            p_atoms is `None`. [5.0]
-        search_max_cutoff : float
-            Maximum cutoff distance to look for host anchor atoms. Used if
-            p_atoms is `None`. [9.0]
 
         Notes
         -----
@@ -69,46 +45,26 @@ class FindBoreschRestraint(AnalysisBase):
         super(FindBoreschRestraint, self).__init__(
                 atomgroup.universe.trajectory, **kwargs)
         self.atomgroup = atomgroup
-        self.l_atoms = l_atoms
-        self.p_atoms = p_atoms
-        self.l_selection = l_selection
-        self.p_selection = p_selection
+        self.atom_set = atom_set
         self.force_constant = force_constant
-        self.protein_routine = protein_routine
-        self.search_init_cutoff = search_init_cutoff
-        self.search_max_cutoff = search_max_cutoff
         self.closest_frame = None
 
     def _prepare(self):
         """Generates necessary Bond, Angle, Dihedral containers.
 
-        If l_atoms and/or p_atoms are missing, will automatically get them.
-        
         Notes
         -----
         Still in active development
         """
-        if self.l_atoms is None:
-            errmsg = "undefined ligand input is not currently supported"
-            raise ValueError(errmsg)
-
-        if self.p_atoms is None:
-            wmsg = ("no p_atoms selection is passed, will automatically seek "
-                    "for host atoms based on {self.p_selection}")
-            warnings.warn(wmsg)
-
-            self.p_atoms = get_host_atoms(self.atomgroup, self.l_atoms[0],
-                    self.p_selection, num_restraints=3,
-                    protein_routine=self.protein_routine,
-                    search_init_cutoff=self.search_init_cutoff,
-                    search_max_cutoff=self.search_max_cutoff)
-
         # Empty container for all the restraints
         self._restraints = []
 
-        for p_atm in self.p_atoms:
+        for pair in self.atom_set:
+            l_atoms = pair[0]
+            p_atoms = pair[1]
+
             self._restraints.append(BoreschRestraint(self.atomgroup,
-                                                     self.l_atoms, p_atm,
+                                                     l_atoms, p_atoms,
                                                      self.n_frames))
 
     def _single_frame(self):

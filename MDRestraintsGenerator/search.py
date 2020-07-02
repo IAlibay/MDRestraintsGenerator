@@ -6,6 +6,8 @@ This file contains utility functions.
 """
 
 import MDAnalysis as mda
+from MDAnalysis.analysis import align
+from MDAnalysis.analysis.rms import RMSF
 import warnings
 
 
@@ -59,7 +61,7 @@ def _get_host_anchors(atomgroup, l_atom, anchor_selection, num_atoms=3,
     return [ix for ix in anchor_atoms.ix]
 
 
-def _get_bonded_cn_atoms(atomgroup, anchor_ix):
+def _get_bonded_host_cn_atoms(atomgroup, anchor_ix):
     """Helper function to get the neighbouring atoms of a CA atom
 
     Parameters
@@ -80,7 +82,8 @@ def _get_bonded_cn_atoms(atomgroup, anchor_ix):
     return c_atom.atoms[0].ix, n_atom.atoms[0].ix
 
 
-def _get_bonded_atoms(atomgroup, anchor_ix, exclusion_str="and not name H*"):
+def _get_bonded_host_atoms(atomgroup, anchor_ix,
+                           exclusion_str="and not name H*"):
     """Helper function to get heavy atoms bonded to anchor
 
     Parameters
@@ -101,7 +104,7 @@ def _get_bonded_atoms(atomgroup, anchor_ix, exclusion_str="and not name H*"):
         errmsg = "could not find binding atoms"
         raise RuntimeError(errmsg)
     
-    # Loop over found indexes and see if any of them have imoqie bpmded atoms
+    # Loop over found indexes and see if any of them have unique bonded atoms
     for index in [ix for ix in atg1.atoms.ix]:
         sel_str = (f"(bonded index {index}) and not (index {anchor_ix}) "
                    f"{exclusion_str}")
@@ -116,9 +119,9 @@ def _get_bonded_atoms(atomgroup, anchor_ix, exclusion_str="and not name H*"):
         raise RuntimeError(errmsg) from None
 
 
-def get_host_atoms(atomgroup, l_atom, p_selection, num_restraints=3,
-                   protein_routine=True, search_init_cutoff=5,
-                   search_max_cutoff=9):
+def find_host_atoms(atomgroup, l_atom, p_selection="protein and name CA",
+                    num_restraints=3, protein_routine=True,
+                    search_init_cutoff=5, search_max_cutoff=9):
     """Gets a list of restraint host atoms using a distance search around
     the ligand bonding atoms.
 
@@ -156,11 +159,108 @@ def get_host_atoms(atomgroup, l_atom, p_selection, num_restraints=3,
 
     for entry in p_atoms:
         if protein_routine and (p_selection == "protein and name CA"):
-            ix2, ix3 = _get_bonded_cn_atoms(atomgroup, entry[0])
+            ix2, ix3 = _get_bonded_host_cn_atoms(atomgroup, entry[0])
         else:
-            ix2, ix3 = _get_bonded_atoms(atomgroup, entry[0])
+            ix2, ix3 = _get_bonded_host_atoms(atomgroup, entry[0])
 
         entry.extend([ix2, ix3])
 
     return p_atoms
 
+
+def find_ligand_atoms(atomgroup, l_selection="resname LIG and not name H*",
+                      num_restraints=3, method="RMSF",
+                      p_align="protein and name CA"):
+    """Gets a list of restraint ligand atoms.
+
+    Parameters
+    ----------
+    atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
+        System for which we want to search for the restraint.
+    l_selection : str
+        Ligand atom selection ["resname LIG"]
+    num_restraints : int
+        Number of ligand restraints to attempt to generate [3]
+    method : "RMSF"
+        Method to use to get ligand anchor atoms, currently only RMSF is
+        implemented.
+    p_align : str
+        Selection string for aligning the trajectory to the host molecule,
+        ['protein and name CA'].
+
+    Returns
+    -------
+    l_atoms : list of 3 int lists
+        List containing the potential ligand restraint atoms.
+    """
+
+    if method is not "RMSF":
+        raise NotImplementedError(f"{method} is not implemented yet")
+    else:
+        return _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints,
+                                      p_align)
+
+
+def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
+    """Helper function to find potential ligand restraint atoms using RMSF.
+
+    Parameters
+    ----------
+    atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
+    l_selection : str
+        Ligand atom selection.
+    num_restraints : int
+        Max number of restraints to generate.
+    p_align : str
+        Selection string to align host.
+    """
+    # Let's not alter the original trajectory
+    copy_u = atomgroup.universe.copy()
+    ligand = copy_u.select_atoms(l_selection)
+    copy_u.transfer_to_memory()
+
+    # if alignment selection is empty then raise error and let users know
+    if len(copy_u.select_atoms(p_align)) == 0:
+        errmsg = (f"no atoms matching '{p_align}' found for alignment ",
+                  f"please review the selection given to p_align")
+        raise RuntimeError(errmsg)
+
+    # Align to initial frame first
+    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align,
+                                 in_memory=True).run()
+
+    # Get the reference frame as the average structure
+    ref_coords = copy_u.trajectory.timeseries().mean(axis=1)
+    ref = mda.Merge(copy_u.atoms).load_new(ref_coords[:, None, :], order="afc")
+
+    # Align to the average coordiantes
+    aligner = align.AlignTraj(copy_u, ref, select=p_align,
+                              in_memory=True).run()
+
+    rmsfer = RMSF(ligand).run()
+
+    # Create dictionary of index : rmsf pairs
+    rmsf_pairs = {i:x for i, x in zip(ligand.atoms.ix, rmsfer.rmsf)}
+
+    # Get the num_restraints top indices are potential anchor points
+    anchors = sorted(rmsf_pairs, key=rmsf_pairs.get)[:num_restraints]
+
+    # loop through anchors and get the lowest RMSF angle set
+    l_atoms = []
+
+    for ix in anchors:
+        anchor_atg = copy_u.atoms[ix]
+        angles = anchor_atg.angles.atomgroup_intersection(ligand, strict=True)
+        angle_list = []
+        for angle in angles.indices:
+            if (angle[0] == ix) or (angle[-1] == ix):
+                ixlist = angle.tolist()
+                score = (rmsf_pairs[angle[0]] + rmsf_pairs[angle[1]] +
+                         rmsf_pairs[angle[2]])
+                if ixlist[-1] == ix:
+                    ixlist.reverse()
+                angle_list.append((ixlist, score))
+        angle_list.sort(key=lambda x: x[1])
+        l_atoms.append(angle_list[0][0])
+
+    return l_atoms

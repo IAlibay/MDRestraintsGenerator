@@ -4,7 +4,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 
 # Import package, test suite, and other packages as needed
 import MDAnalysis as mda
-import MDRestraintsGenerator.utils as utils
+from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC
 from numpy.testing import assert_almost_equal
 import warnings
@@ -25,8 +25,8 @@ def test_no_host_anchors(u):
     anchor_selection = "protein and name CA"
 
     with pytest.raises(RuntimeError, match=errmsg):
-        utils._get_host_anchors(u, l_atom, anchor_selection, num_atoms=1,
-                                init_cutoff=1, max_cutoff=3)
+        search._get_host_anchors(u, l_atom, anchor_selection, num_atoms=1,
+                                 init_cutoff=1, max_cutoff=3)
 
 
 def test_cutoff_warning(u):
@@ -38,8 +38,8 @@ def test_cutoff_warning(u):
     anchor_selection = "protein and name CA"
 
     with pytest.warns(UserWarning, match=errmsg):
-        utils._get_host_anchors(u, l_atom, anchor_selection, num_atoms=3,
-                                init_cutoff=5, max_cutoff=9)
+        search._get_host_anchors(u, l_atom, anchor_selection, num_atoms=3,
+                                 init_cutoff=5, max_cutoff=9)
 
 
 def test_basic_bonded(u):
@@ -49,7 +49,7 @@ def test_basic_bonded(u):
     expected_second_atom = 1320
     expected_third_atom = 1318 
 
-    second_atom, third_atom = utils._get_bonded_atoms(u, p_atom)
+    second_atom, third_atom = search._get_bonded_host_atoms(u, p_atom)
 
     assert expected_second_atom == second_atom
     assert third_atom == expected_third_atom
@@ -65,4 +65,23 @@ def test_bonded_errors(u, errmsg, exclusion_str):
     p_atom = u.select_atoms('resname SOL').atoms[0].ix
 
     with pytest.raises(RuntimeError, match=errmsg):
-        utils._get_bonded_atoms(u, p_atom, exclusion_str)
+        search._get_bonded_host_atoms(u, p_atom, exclusion_str)
+
+
+def test_find_atoms_regression(u):
+    l_atoms = search.find_ligand_atoms(u)
+
+    assert l_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
+                       [2607, 2606, 2608]]
+
+
+def test_find_atoms_notimplemented_method(u):
+    errmsg = "foo is not implemented yet"
+    with pytest.raises(NotImplementedError, match=errmsg):
+        l_atoms = search.find_ligand_atoms(u, method="foo")
+
+
+def test_find_atoms_empty_align_selection(u):
+    errmsg = "no atoms matchin"
+    with pytest.raises(RuntimeError, match=errmsg):
+        l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
