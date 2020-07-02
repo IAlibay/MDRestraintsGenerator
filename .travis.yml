@@ -15,12 +15,24 @@ matrix:
 
     - os: linux
       dist: bionic
-      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-9
+          packages:
+            - clang-9 
       language: generic  # No need to set Python version since its conda
       env: PYTHON_VER=3.6
     - os: linux
       dist: bionic
-      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-9
+          packages:
+            - clang-9
       language: generic
       env: PYTHON_VER=3.7
 
