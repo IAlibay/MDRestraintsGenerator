@@ -215,7 +215,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         Selection string to align host.
     """
     # Let's not alter the original trajectory
-    copy_u = atomgroup.universe
+    copy_u = atomgroup.universe.copy()
     ligand = copy_u.select_atoms(l_selection)
     copy_u.transfer_to_memory()
 
@@ -226,14 +226,16 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         raise RuntimeError(errmsg)
 
     # Align to initial frame first
-    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align).run()
+    prealigner = align.AlignTraj(copy_u, copy_u, select=p_align)
+    prealigner.run()
 
     # Get the reference frame as the average structure
     ref_coords = copy_u.trajectory.timeseries().mean(axis=1)
     ref = mda.Merge(copy_u.atoms).load_new(ref_coords[:, None, :], order="afc")
 
     # Align to the average coordiantes
-    aligner = align.AlignTraj(copy_u, ref, select=p_align).run()
+    aligner = align.AlignTraj(copy_u, ref, select=p_align)
+    aligner.run()
 
     rmsfer = RMSF(ligand).run()
 
