@@ -9,7 +9,6 @@ env:
     - CONDA_DEPENDENCIES="MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
     - CONDA_CHANNELS='conda-forge'
     - CONDA_CHANNEL_PRIORITY=True
-    - NUMPY_VERSION=stable
 
 
 # Run jobs on container-based infrastructure, can be overridden per job
@@ -18,20 +17,24 @@ matrix:
     # Extra includes for OSX since python language is not available by default on OSX
     - os: osx
       language: generic
-      env: PYTHON_VER=3.6
+      env: PYTHON_VERSION=3.6
     - os: osx
       language: generic
-      env: PYTHON_VER=3.7
+      env: PYTHON_VERSION=3.7
 
 
     - os: linux
       dist: bionic
       language: generic  # No need to set Python version since its conda
-      env: PYTHON_VER=3.6
+      env: PYTHON_VERSION=3.6
     - os: linux
       dist: bionic
       language: generic
-      env: PYTHON_VER=3.7
+      env: PYTHON_VERSION=3.7
+    - os: linux
+      dist: bionic
+      language: generic
+      env: PYTHON_VERSION=3.8
 
 
 before_install:
