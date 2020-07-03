@@ -43,15 +43,23 @@ before_install:
 
 install:
 
+  - CONDA_DEPENDENCIES="conda-forge pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython"
+  - CONDA_CHANNELS='biobuilds conda-forge'
+  - CONDA_CHANNEL_PRIORITY=True
+  - NUMPY_VERSION=stable
+  - git clone git://github.com/astropy/ci-helpers.git
+  - source ci-helpers/travis/setup_conda.sh
     # Create test environment for package
-  - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
+    #  - python devtools/scripts/create_conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/test_env.yaml
     # Activate the test environment
-  - conda activate test
+    #  - conda activate test
     # Get required conda packages
-  - conda install -c biobuilds -c conda-forge pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython
+    #  - conda install -c biobuilds -c conda-forge pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython
   - git clone https://github.com/MDAnalysis/mdanalysis.git
   - pip install -e mdanalysis/package
   - pip install -e mdanalysis/testsuite
+    # check that we got the right MDA version
+  - python -c "import MDAnalysis as mda; print(mda.__version__)"
     #- conda install -c conda-forge MDAnalysisTests=0.20.1
     # Build and install package
   - python setup.py develop --no-deps
