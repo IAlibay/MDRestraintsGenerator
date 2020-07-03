@@ -58,7 +58,7 @@ install:
 
 
 script:
-  - pytest -v MDRestraintsGenerator/tests/
+  - pytest --distable-pytest-warnings --durations=50 MDRestraintsGenerator/tests/
 
 notifications:
     email: false
