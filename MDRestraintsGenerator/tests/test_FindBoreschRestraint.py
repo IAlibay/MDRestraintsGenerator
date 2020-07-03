@@ -45,38 +45,37 @@ def test_basic_regression(tmpdir, u):
 @pytest.mark.parametrize('top,traj', [(PSF, DCD), (GRO, XTC)])
 def test_aligntraj(tmpdir, top, traj):
     """AlignTraj is failing, so let's test it here"""
-    copy_u = mda.Universe(top, traj)
-    with tmpdir.as_cwd():
-        prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA")
-    prealigner.run()
+    u = mda.Universe(top, traj)
+    aligner = align.AlignTraj(u, u, select="protein and name CA", in_memory=True)
+    aligner.run()
 
     assert 1 == 1
 
 
-def test_basic_regression_ligand_search(u):
-    """Regression test to check we get the same answer on a ligand search"""
-
-    ligand_atoms = search.find_ligand_atoms(u)
-
-    atom_set = []
-
-    for l_atoms in ligand_atoms:
-        p_atoms = search.find_host_atoms(u, l_atoms[0])
-        atom_set.extend([(l_atoms, p) for p in p_atoms])
-
-    boresch = FindBoreschRestraint(u, atom_set)
-
-    boresch.run()
-
-    assert_equal(boresch.restraint.bond.atomgroup.atoms.ix,
-                 [2606, 1563])
-    assert_equal(boresch.restraint.angles[0].atomgroup.atoms.ix,
-                 [2607, 2606, 1563])
-    assert_equal(boresch.restraint.angles[1].atomgroup.atoms.ix,
-                 [2606, 1563, 1569])
-    assert_equal(boresch.restraint.dihedrals[0].atomgroup.atoms.ix,
-                 [2609, 2607, 2606, 1563])
-    assert_equal(boresch.restraint.dihedrals[1].atomgroup.atoms.ix,
-                 [2607, 2606, 1563, 1569])
-    assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
-                 [2606, 1563, 1569, 1571])
+#def test_basic_regression_ligand_search(u):
+#    """Regression test to check we get the same answer on a ligand search"""
+#
+#    ligand_atoms = search.find_ligand_atoms(u)
+#
+#    atom_set = []
+#
+#    for l_atoms in ligand_atoms:
+#        p_atoms = search.find_host_atoms(u, l_atoms[0])
+#        atom_set.extend([(l_atoms, p) for p in p_atoms])
+#
+#    boresch = FindBoreschRestraint(u, atom_set)
+#
+#    boresch.run()
+#
+#    assert_equal(boresch.restraint.bond.atomgroup.atoms.ix,
+#                 [2606, 1563])
+#    assert_equal(boresch.restraint.angles[0].atomgroup.atoms.ix,
+#                 [2607, 2606, 1563])
+#    assert_equal(boresch.restraint.angles[1].atomgroup.atoms.ix,
+#                 [2606, 1563, 1569])
+#    assert_equal(boresch.restraint.dihedrals[0].atomgroup.atoms.ix,
+#                 [2609, 2607, 2606, 1563])
+#    assert_equal(boresch.restraint.dihedrals[1].atomgroup.atoms.ix,
+#                 [2607, 2606, 1563, 1569])
+#    assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
+#                 [2606, 1563, 1569, 1571])
