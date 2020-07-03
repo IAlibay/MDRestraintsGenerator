@@ -5,7 +5,7 @@ dependencies:
     # Base depends
   - python
   - pip
-  - MDAnalysis=0.20.1
+    #- MDAnalysis=0.20.1
   - matplotlib
   - scipy
     # Testing

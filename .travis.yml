@@ -48,7 +48,11 @@ install:
     # Activate the test environment
   - conda activate test
     # Get required conda packages
-  - conda install -c conda-forge MDAnalysisTests=0.20.1
+  - conda install -c biobuilds -c conda-forge pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython
+  - git clone https://github.com/MDAnalysis/mdanalysis.git
+  - pip install -e mdanalysis/package
+  - pip install -e mdanalysis/testsuite
+    #- conda install -c conda-forge MDAnalysisTests=0.20.1
     # Build and install package
   - python setup.py develop --no-deps
 
