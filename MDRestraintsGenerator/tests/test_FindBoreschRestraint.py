@@ -8,6 +8,7 @@ from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
 from MDAnalysisTests.datafiles import PSF, DCD, GRO, XTC
+from MDAnalysis import transformations as trans
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
 import pytest
@@ -42,6 +43,15 @@ def test_basic_regression(tmpdir, u):
         assert_almost_equal(dG, -6.592, 2)
 
 
+# check userguide failure too
+def test_transform():
+    u = mda.Universe(TPR, XTC)
+    protein = u.select_atoms('protein')
+    align_transform = trans.fit_rot_trans(protein, protein, weights=protein.masses)
+    u.trajectory.add_transformations(align_transform)
+    assert 1 == 1
+
+
 @pytest.mark.parametrize('top,traj', [(PSF, DCD), (GRO, XTC)])
 def test_aligntraj(tmpdir, top, traj):
     """AlignTraj is failing, so let's test it here"""
@@ -50,7 +60,6 @@ def test_aligntraj(tmpdir, top, traj):
     aligner.run()
 
     assert 1 == 1
-
 
 #def test_basic_regression_ligand_search(u):
 #    """Regression test to check we get the same answer on a ligand search"""
