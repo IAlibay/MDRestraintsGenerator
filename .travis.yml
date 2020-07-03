@@ -1,6 +1,13 @@
 language: python
+group: travis_latest
 
 # Run jobs on container-based infrastructure, can be overridden per job
+
+env:
+  global:
+    - CYTHON_TRACE_NOGIL=1
+    - MPLBACKEND=agg
+
 
 matrix:
   include:
@@ -14,15 +21,12 @@ matrix:
 
 
     - os: linux
-      dist: bionic
       language: generic  # No need to set Python version since its conda
       env: PYTHON_VER=3.6
     - os: linux
-      dist: bionic
       language: generic
       env: PYTHON_VER=3.7
     - os: linux
-      dist: bionic
       language: generic
       env: PYTHON_VER=3.8
 
