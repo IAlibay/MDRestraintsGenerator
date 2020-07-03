@@ -21,6 +21,10 @@ matrix:
       dist: bionic
       language: generic
       env: PYTHON_VER=3.7
+    - os: linux
+      dist: bionic
+      language: generic
+      env: PYTHON_VER=3.8
 
 
 before_install:
