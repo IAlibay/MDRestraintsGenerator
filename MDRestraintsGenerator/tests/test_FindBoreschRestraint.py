@@ -7,7 +7,7 @@ from MDAnalysis.analysis import align
 from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
-from MDAnalysisTests.datafiles import PSF, DCD, GRO, XTC
+from MDAnalysisTests.datafiles import PSF, DCD, GRO, TPR, XTC
 from MDAnalysis import transformations as trans
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
