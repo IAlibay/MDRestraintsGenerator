@@ -43,8 +43,8 @@ before_install:
 
 
 install:
-
-  - CONDA_DEPENDENCIES="pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython"
+  - CONDA_DEPENDENCIES="mmtf-python biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov"
+    #- CONDA_DEPENDENCIES="pip cython numpy mmtf-python mock six biopython networkx cython matplotlib scipy griddataformats hypothesis gsd codecov clustalw=2.1 netcdf4 scikit-learn joblib psutil pytest tqdm tidynamics sphinx matplotlib chemfiles biopython"
   - CONDA_CHANNELS='biobuilds conda-forge'
   - CONDA_CHANNEL_PRIORITY=True
   - NUMPY_VERSION=stable
