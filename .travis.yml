@@ -40,7 +40,7 @@ install:
     # Activate the test environment
   - conda activate test
     # Get required conda packages
-  - conda install -c conda-forge MDAnalysis numpy scipy matplotlib
+  - conda install -c conda-forge MDAnalysisTests
     # Build and install package
   - python setup.py develop --no-deps
 

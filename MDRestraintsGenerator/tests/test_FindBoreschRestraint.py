@@ -7,6 +7,7 @@ from MDAnalysis.analysis import align
 from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
+from MDAnalysisTests.datafiles import GRO, XTC
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
 import pytest
@@ -43,7 +44,7 @@ def test_basic_regression(tmpdir, u):
 
 def test_aligntraj(tmpdir):
     """AlignTraj is failing, so let's test it here"""
-    copy_u = mda.Universe(T4_TPR, T4_XTC)
+    copy_u = mda.Universe(GRO, XTC)
     with tmpdir.as_cwd():
         prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA",
                                      in_memory=True)
