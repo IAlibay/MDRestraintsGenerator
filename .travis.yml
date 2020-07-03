@@ -46,7 +46,7 @@ install:
 
 
 script:
-  - pytest -v --cov=MDRestraintsGenerator MDRestraintsGenerator/tests/
+  - pytest -v MDRestraintsGenerator/tests/
 
 notifications:
     email: false
