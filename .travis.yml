@@ -48,7 +48,7 @@ install:
     # Activate the test environment
   - conda activate test
     # Get required conda packages
-  - conda install -c conda-forge MDAnalysisTests
+  - conda install -c conda-forge MDAnalysisTests=0.20.1
     # Build and install package
   - python setup.py develop --no-deps
 
