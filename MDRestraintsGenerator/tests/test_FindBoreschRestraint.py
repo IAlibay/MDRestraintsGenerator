@@ -47,8 +47,7 @@ def test_aligntraj(tmpdir, top, traj):
     """AlignTraj is failing, so let's test it here"""
     copy_u = mda.Universe(top, traj)
     with tmpdir.as_cwd():
-        prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA",
-                                     in_memory=True)
+        prealigner = align.AlignTraj(copy_u, copy_u, select="protein and name CA")
     prealigner.run()
 
     assert 1 == 1
