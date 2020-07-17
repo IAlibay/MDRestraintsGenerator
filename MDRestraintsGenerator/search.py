@@ -150,7 +150,7 @@ def _get_bonded_host_atoms(atomgroup, anchor_ix,
         raise RuntimeError(errmsg) from None
 
 
-def FindHostAtoms(AnalysisBase):
+class FindHostAtoms(AnalysisBase):
     """Class to get a list of restraint host atoms using a distance search
     around the ligand bonding atoms.
 
