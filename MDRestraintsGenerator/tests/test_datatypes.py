@@ -11,7 +11,7 @@ import os
 
 @pytest.fixture(scope='module')
 def u():
-    return mda.Universe(T4_TPR, T4_XTC)
+    return mda.Universe(T4_TPR, T4_NC)
 
 
 def test_vector_store():
