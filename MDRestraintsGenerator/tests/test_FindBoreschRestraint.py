@@ -5,7 +5,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 import MDAnalysis as mda
 from MDRestraintsGenerator import search
 from MDRestraintsGenerator.restraints import FindBoreschRestraint
-from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
+from .datafiles import T4_TPR, T4_XTC, T4_NC, T4_OGRO, T4_OTOP
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
 import pytest

@@ -13,7 +13,7 @@ T4_TPR = resource_filename(__name__, '../data/4RBN/npt_prod1.tpr')
 T4_XTC = resource_filename(__name__,
                            '../data/4RBN/npt_prod1_center.skip200.xtc')
 T4_NC = resource_filename(__name__,
-                          '../data/4RN/npt_prod1_center.skip200.nc')
+                          '../data/4RBN/npt_prod1_center.skip200.nc')
 T4_OGRO = resource_filename(__name__,
                             '../data/4RBN/ClosestRestraintFrame.gro')
 T4_OTOP = resource_filename(__name__,

@@ -4,7 +4,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 
 import MDAnalysis as mda
 import MDRestraintsGenerator.datatypes as dtypes
-from .datafiles import T4_TPR, T4_XTC
+from .datafiles import T4_TPR, T4_XTC, T4_NC
 import pytest
 import os
 

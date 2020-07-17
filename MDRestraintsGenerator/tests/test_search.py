@@ -5,7 +5,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 # Import package, test suite, and other packages as needed
 import MDAnalysis as mda
 from MDRestraintsGenerator import search
-from .datafiles import T4_TPR, T4_XTC
+from .datafiles import T4_TPR, T4_XTC, T4_NC
 from numpy.testing import assert_almost_equal
 import warnings
 import pytest
