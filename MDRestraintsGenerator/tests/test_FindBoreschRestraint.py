@@ -105,7 +105,7 @@ def test_basic_regression_full_ligandprotein_search(u):
 
     for l_atoms in ligand_atoms:
         psearch = search.FindHostAtoms(u, l_atoms[0])
-        psearch.run()
+        psearch.run(step=5)
         atom_set.extend([(l_atoms, p) for p in psearch.host_atoms])
 
     boresch = FindBoreschRestraint(u, atom_set)

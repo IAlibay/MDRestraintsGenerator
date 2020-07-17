@@ -85,3 +85,11 @@ def test_find_atoms_empty_align_selection(u):
     errmsg = "no atoms matchin"
     with pytest.raises(RuntimeError, match=errmsg):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
+
+
+def test_search_from_capped_err(u):
+    lig = u.select_atoms('resname LIG')
+    prot = u.atoms
+    errmsg = "too many reference atoms passed"
+    with pytest.raises(ValueError, match=errmsg):
+        search._search_from_capped(lig, prot, 1.0)

@@ -7,6 +7,7 @@ env:
     - MPLBACKEND=agg
       # scipy and matplotlib are in MDAnalysis
     - CONDA_DEPENDENCIES="MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
+    - PIP_DEPENDENCIES="pytest-xdist"
     - CONDA_CHANNELS='conda-forge'
     - CONDA_CHANNEL_PRIORITY=True
 
@@ -55,7 +56,7 @@ install:
 
 
 script:
-  - pytest -v --cov=MDRestraintsGenerator MDRestraintsGenerator/tests/
+  - pytest -n 2 -v --cov=MDRestraintsGenerator MDRestraintsGenerator/tests/
 
 notifications:
     email: false
