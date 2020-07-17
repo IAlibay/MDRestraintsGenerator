@@ -39,7 +39,7 @@ def _search_from_capped(ref_ag, config_ag, cutoff):
                                        max_cutoff=cutoff,
                                        return_distances=True)
 
-    return pairs
+    return pairs, distances
 
 
 def _get_host_anchors(atomgroup, l_atom, anchor_selection, num_atoms=3,
@@ -164,13 +164,13 @@ class FindHostAtoms(AnalysisBase):
         Selection string to define the atoms to be included as possible
         anchor points (direct binding to `l_atom`). Note: "protein and name CA"
         will default to a sepcial routine looking for C/N atoms bonded to CA
-        unless `protein_routine` is `False`.
+        unless `protein_routine` is `False`. ["protein and name CA"]
     num_restraints : int
         Minimum number of boresch restraints to try to generate for a given
         ligand anchor atoms. [3]
     protein_routine : bool
         Option to turn off the C/N atom gathering routine if `p_selection` is
-        passed as "protein and name CA"
+        passed as "protein and name CA". [True]
     search_init_cutoff : float
         Minimum cutoff distance to look for host anchor atoms. [5.0]
     search_max_cutoff : float
@@ -193,7 +193,7 @@ class FindHostAtoms(AnalysisBase):
         self.atomgroup = atomgroup
         self.l_atom = l_atom
         self.p_selection = p_selection
-        self.ligand_ag = atomgroup.select_atoms('index {l_atom}')
+        self.ligand_ag = atomgroup.select_atoms(f'index {l_atom}')
         self.protein_ag = atomgroup.select_atoms(p_selection)
         self.num_restraints = num_restraints
         self.protein_routine = protein_routine
@@ -207,9 +207,10 @@ class FindHostAtoms(AnalysisBase):
 
     def _single_frame(self):
         pairs, distances = _search_from_capped(self.ligand_ag,
-                                               self.protein_ag)
+                                               self.protein_ag,
+                                               self.search_max_cutoff)
         self._anchor_pairs.append(pairs)
-        self._anchor_distances.append(pairs)
+        self._anchor_distances.append(distances)
 
     def _conclude(self):
         # first we check that we found sufficient numbers of anchors
@@ -221,7 +222,8 @@ class FindHostAtoms(AnalysisBase):
                                         self._anchor_distances):
                 for pair, distance in zip(pairs, distances):
                     if distance < cutoff_distance:
-                        anchors.append(pair[1])
+                        index = self.protein_ag.atoms[pair[1]].index
+                        anchors.append(index)
 
             anchors = set(anchors)
             found_atoms = len(anchors)
