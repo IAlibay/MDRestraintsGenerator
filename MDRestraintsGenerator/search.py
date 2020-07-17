@@ -182,8 +182,8 @@ class FindHostAtoms(AnalysisBase):
           ```num_restraints`` anchors within the ``search_init_cutoff``
           distance. Failing to do this the distance will increase by 1 A until
           it exceeds the ``search_max_cutoff`` value. If it fails to find a
-          number of host anchors >= ``num_restraints`` it will fail with a
-          ``RuntimeError`.
+          number of host anchors >= ``num_restraints`` it will throw a user
+          warning.
     """
     def __init__(self, atomgroup, l_atom, p_selection="protein and name CA",
                  num_restraints=3, protein_routine=True,
@@ -235,8 +235,9 @@ class FindHostAtoms(AnalysisBase):
                             f"to {cutoff_distance}")
                     warnings.warn(wmsg)
                 else:
-                    errmsg = "Too few host anchor atoms found"
-                    raise RuntimeError(errmsg)
+                    wmsg= (f"Too few anchor atoms found, carrying on with "
+                           f"{found_atoms} anchors")
+                    warnings.warn(wmsg)
 
         for entry in anchors:
             if self.protein_routine and (self.p_selection ==
