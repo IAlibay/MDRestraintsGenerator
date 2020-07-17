@@ -8,7 +8,40 @@ This file contains utility functions.
 import MDAnalysis as mda
 from MDAnalysis.analysis import align
 from MDAnalysis.analysis.rms import RMSF
+from MDAnalysis.lib.distances import capped_distance
 import warnings
+
+
+def _search_from_capped(atomgroup, ref_ag, config_ag, cutoff):
+    """Helper function to search for neighbouring atoms using
+    capped_distances
+
+    Parameters
+    ----------
+    anchor_ag: MDAnalysis.AtomGroup
+        Containing the anchor atom to search around (must be a single atom).
+    config_ag: MDAnalysis.AtomGroup 
+        Atoms to include in the search.
+    cutoff: float
+        Cutoff search distance value.
+
+    Returns
+    -------
+    indices: list
+        List of atom indices found within cutoff distance
+    """
+    if len(ref_ag.atoms) > 1:
+        raise ValueError('too many reference atoms passed')
+
+    pairs = capped_distance(ref_ag.atoms.positions, config_ag.atoms.positions,
+                            max_cutoff=cutoff, return_distances=False)
+
+    indices = []
+
+    for pair in pairs:
+        indices.append(ref_ag.atoms[pair[1]].index)
+
+    return indices
 
 
 def _get_host_anchors(atomgroup, l_atom, anchor_selection, num_atoms=3,
