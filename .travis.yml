@@ -42,28 +42,15 @@ before_install:
   - uname -a
   - df -h
   - ulimit -a
-  - |
-     if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
-       wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-     else
-       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-     fi
-  - mkdir $HOME/.conda
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - $HOME/miniconda/bin/conda init bash
-  - source ~/.bash_profile
-  - conda activate base
-  - conda update --yes conda
 
 
 install:
-  - conda env create python=$PYTHON_VERSION -f devtools/conda-envs/build_mda.yml
-  - conda activate test 
+
+    # Create test environment for package (using astropy's ci-helper)
+  - git clone git://github.com/astropy/ci-helpers.git
+  - source ci-helpers/travis/setup_conda.sh
   - python -V
     # Build and install package
-  - git clone https://github.com/MDAnalysis/mdanalysis.git
-  - pip install mdanalysis/package
-  - pip install mdanalysis/testsuite
   - python setup.py develop --no-deps
 
 
