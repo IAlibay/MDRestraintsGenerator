@@ -414,7 +414,7 @@ class BoreschRestraint:
             except AttributeError:
                 raise RuntimeError("no frame defined for writing")
 
-        if outtype is not "GMX":
+        if outtype != "GMX":
             raise RuntimeError(f"{outtype} not implemented yet")
 
         # Final check for co-linearity

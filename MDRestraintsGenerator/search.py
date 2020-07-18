@@ -393,4 +393,8 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
         angle_list.sort(key=lambda x: x[1])
         l_atoms.append(angle_list[0][0])
 
+    del(copy_u)
+    del(aligner)
+    del(rmsfer)
+
     return l_atoms
