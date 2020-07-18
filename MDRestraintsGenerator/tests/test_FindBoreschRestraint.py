@@ -8,6 +8,7 @@ from MDRestraintsGenerator.restraints import FindBoreschRestraint
 from .datafiles import T4_TPR, T4_XTC, T4_NC, T4_OGRO, T4_OTOP
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
+import gc
 import pytest
 
 
@@ -96,3 +97,6 @@ def test_basic_regression_ligand_search(u):
                  [2607, 2606, 1563, 1569])
     assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
                  [2606, 1563, 1569, 1571])
+
+    # try just doing garbage collection
+    gc.collect()
