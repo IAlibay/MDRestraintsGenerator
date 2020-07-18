@@ -36,6 +36,10 @@ if __name__ == "__main__":
                             help='ligand selection string')
         parser.add_argument('--host_selection', default="protein and name CA",
                             help='host atom selection string')
+        parser.add_argument('--temperature', type=float, default=298.15,
+                            help='simulation temperature')
+        parser.add_argument('--force_constant', type=float, default=10.0,
+                            help='restraint force constant')
         args = parser.parse_args()
         return args
 
@@ -44,7 +48,7 @@ if __name__ == "__main__":
     u = mda.Universe(args.top, args.traj)
 
     if None in [args.l1, args.l2, args.l3]:
-        wmsg = "Missing ligand atoms, will search for suitable atoms instead"
+        wmsg = "Ligand atoms not passed, will search for suitable atoms instead"
         warnings.warn(wmsg)
         # by default we will exclude H* named atoms
         l_sel = f"{args.ligand_selection} and not name H*"
@@ -57,9 +61,10 @@ if __name__ == "__main__":
     # find protein atoms
     atom_set = []
     for l_atoms in ligand_atoms:
-        p_atoms = search.find_host_atoms(u, l_atoms[0],
-                                         p_selection=args.host_selection)
-        atom_set.extend([(l_atoms, p) for p in p_atoms])
+        psearch = search.FindHostAtoms(u, l_atoms[0],
+                                       p_selection=args.host_selection)
+        psearch.run()
+        atom_set.extend([(l_atoms, p) for p in psearch.host_atoms])
 
     # Create the boresch finder analysis object
     boresch = FindBoreschRestraint(u, atom_set)
@@ -71,8 +76,9 @@ if __name__ == "__main__":
     boresch.restraint.plot()
 
     # Write out the intermolecular section to a topology
-    boresch.restraint.write()
+    boresch.restraint.write(force_constant=args.force_constant)
 
-    dG_off = boresch.restraint.standard_state()
+    dG_off = boresch.restraint.standard_state(force_constant=args.force_constant,
+                                              temperature=args.temperature)
 
     print(f"dG_off: {dG_off}, dG_on: {-dG_off}")
