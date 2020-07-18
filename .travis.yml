@@ -57,7 +57,7 @@ before_install:
 
 
 install:
-  - conda env create python=$PYTHON_VERSION -f devtools/conda-envs/test_env.yml --quiet
+  - conda env create python=$PYTHON_VERSION -f devtools/conda-envs/test_env.yml
   - conda activate test 
   - python -V
     # Build and install package
