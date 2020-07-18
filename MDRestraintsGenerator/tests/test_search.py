@@ -68,6 +68,26 @@ def test_cutoff_warning_findhostatoms(u):
         psearch.run()
 
 
+def test_findhostatoms_names(u):
+    """Checks that the first, second, and third index belong to the right
+    atom types"""
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom)
+
+    psearch.run()
+
+    for atoms in psearch.host_atoms:
+        assert u.atoms[atoms[0]].name == "CA"
+        assert u.select_atoms(f'index {atoms[0]} and bonded index {atoms[1]}')
+        assert u.atoms[atoms[1]].name == "C"
+        selstring = (f'index {atoms[1]} and (bonded index {atoms[0]}) and '
+                     f'(bonded index {atoms[2]})')
+        assert u.select_atoms(selstring)
+        assert u.atoms[atoms[2]].name == "N"
+
+
 def test_basic_bonded(u):
     """Basic test for getting a bonded atom"""
 
