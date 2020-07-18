@@ -68,7 +68,9 @@ def test_bonded_errors(u, errmsg, exclusion_str):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
 
-def test_find_atoms_regression(u):
+def test_find_atoms_regression():
+    # Don't use a module scoped universe
+    u = mda.Universe(T4_TPR, T4_NC)
     l_atoms = search.find_ligand_atoms(u)
 
     assert l_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
