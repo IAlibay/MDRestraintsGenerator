@@ -70,6 +70,9 @@ def test_basic_regression_ligand_search(u):
 
     ligand_atoms = search.find_ligand_atoms(u)
 
+    assert ligand_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
+                            [2607, 2606, 2608]]
+
     atom_set = []
 
     for l_atoms in ligand_atoms:
