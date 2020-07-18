@@ -57,10 +57,13 @@ before_install:
 
 
 install:
-  - conda env create python=$PYTHON_VERSION -f devtools/conda-envs/test_env.yml
+  - conda env create python=$PYTHON_VERSION -f devtools/conda-envs/build_mda.yml
   - conda activate test 
   - python -V
     # Build and install package
+  - git clone https://github.com/MDAnalysis/mdanalysis.git
+  - pip install mdanalysis/package
+  - pip install mdanalysis/testsuite
   - python setup.py develop --no-deps
 
 
