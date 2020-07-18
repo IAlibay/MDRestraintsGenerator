@@ -235,9 +235,10 @@ class FindHostAtoms(AnalysisBase):
                             f"to {cutoff_distance}")
                     warnings.warn(wmsg)
                 else:
-                    wmsg= (f"Too few anchor atoms found, carrying on with "
-                           f"{found_atoms} anchors")
+                    wmsg = (f"Too few anchor atoms found, carrying on with "
+                            f"{found_atoms} anchors")
                     warnings.warn(wmsg)
+                    break
 
         for entry in anchors:
             if self.protein_routine and (self.p_selection ==
@@ -392,9 +393,5 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
                 angle_list.append((ixlist, score))
         angle_list.sort(key=lambda x: x[1])
         l_atoms.append(angle_list[0][0])
-
-    del(copy_u)
-    del(aligner)
-    del(rmsfer)
 
     return l_atoms

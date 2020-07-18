@@ -6,7 +6,7 @@ env:
     - CYTHON_TRACE_NOGIL=1
     - MPLBACKEND=agg
       # scipy and matplotlib are in MDAnalysis
-    - CONDA_DEPENDENCIES="numpy==1.17 MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
+    - CONDA_DEPENDENCIES="numpy==1.18.5 MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
     - CONDA_CHANNELS='conda-forge'
     - CONDA_CHANNEL_PRIORITY=True
 

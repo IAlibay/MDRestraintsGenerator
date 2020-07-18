@@ -7,7 +7,6 @@ import MDAnalysis as mda
 from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC
 from numpy.testing import assert_almost_equal
-import warnings
 import pytest
 
 
@@ -29,6 +28,20 @@ def test_no_host_anchors(u):
                                  init_cutoff=1, max_cutoff=3)
 
 
+def test_no_host_anchors_findhostatoms(u):
+    """Throws a warning that too few anchors have been found"""
+
+    errmsg = "Too few anchor atoms found, carrying on with"
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom, search_init_cutoff=1,
+                                   search_max_cutoff=3)
+
+    with pytest.warns(UserWarning, match=errmsg):
+        psearch.run()
+
+
 def test_cutoff_warning(u):
     """Throws a warning that cutoff is expanding"""
 
@@ -42,12 +55,25 @@ def test_cutoff_warning(u):
                                  init_cutoff=5, max_cutoff=9)
 
 
+def test_cutoff_warning_findhostatoms(u):
+    """Throws a warning that cutoff is expanding"""
+
+    errmsg = "Too few anchor atoms found, expanding cutoff"
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom)
+
+    with pytest.warns(UserWarning, match=errmsg):
+        psearch.run()
+
+
 def test_basic_bonded(u):
     """Basic test for getting a bonded atom"""
 
     p_atom = 1322
     expected_second_atom = 1320
-    expected_third_atom = 1318 
+    expected_third_atom = 1318
 
     second_atom, third_atom = search._get_bonded_host_atoms(u, p_atom)
 
@@ -70,8 +96,6 @@ def test_bonded_errors(u, errmsg, exclusion_str):
 
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
-
-    # l_atoms = [[2606, 2607, 2609], [2604, 2605, 2603], [2607, 2606, 2608]]
 
     assert l_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
                        [2607, 2606, 2608]]

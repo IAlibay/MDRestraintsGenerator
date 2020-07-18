@@ -5,9 +5,6 @@ A framework for generating restraints for MD simulations
 This file contains IO functions.
 """
 
-import MDAnalysis as mda
-import warnings
-
 
 def _write_bond_header(rfile):
     """Helper function to write the bond intermolecular section"""
@@ -97,4 +94,3 @@ def _write_dihedral(dihedral, index, force_constant, rfile):
     val = dihedral.values[index]
     rfile.write(f"{atom1:>6}{atom2:>6}{atom3:>6}{atom4:>6}     2    "
                 f"{val:>6.3f}    0.0    {val:>6.3f}   {angle_fc:>6.2f}\n")
-

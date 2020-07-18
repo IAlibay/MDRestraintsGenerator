@@ -96,3 +96,36 @@ def test_basic_regression_ligand_search(u):
                  [2607, 2606, 1563, 1569])
     assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
                  [2606, 1563, 1569, 1571])
+
+
+def test_basic_regression_ligand_protein_search(u):
+    """Regression test to check we get the same answer on a ligand search"""
+
+    ligand_atoms = search.find_ligand_atoms(u)
+
+    assert ligand_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
+                            [2607, 2606, 2608]]
+
+    atom_set = []
+
+    for l_atoms in ligand_atoms:
+        psearch = search.FindHostAtoms(u, l_atoms[0])
+        psearch.run()
+        atom_set.extend([(l_atoms, p) for p in psearch.host_atoms])
+
+    boresch = FindBoreschRestraint(u, atom_set)
+
+    boresch.run()
+
+    assert_equal(boresch.restraint.bond.atomgroup.atoms.ix,
+                 [2606, 1563])
+    assert_equal(boresch.restraint.angles[0].atomgroup.atoms.ix,
+                 [2607, 2606, 1563])
+    assert_equal(boresch.restraint.angles[1].atomgroup.atoms.ix,
+                 [2606, 1563, 1569])
+    assert_equal(boresch.restraint.dihedrals[0].atomgroup.atoms.ix,
+                 [2609, 2607, 2606, 1563])
+    assert_equal(boresch.restraint.dihedrals[1].atomgroup.atoms.ix,
+                 [2607, 2606, 1563, 1569])
+    assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
+                 [2606, 1563, 1569, 1571])

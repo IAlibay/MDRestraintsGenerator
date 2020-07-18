@@ -19,7 +19,6 @@ import MDAnalysis as mda
 import numpy as np
 from scipy import stats
 from scipy.stats import circmean, circvar, circstd
-import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 
@@ -95,13 +94,10 @@ class VectorData:
                 bin_width = 4
                 return np.arange(-180, 180 + bin_width, bin_width)
 
-
         try:
             self.mean
         except AttributeError:
             raise AttributeError("vector object has not been analyzed yet")
-
-
 
         # Set some parameters and prep figure
         pltparams = {'font.size': 12,
@@ -262,7 +258,7 @@ class BoreschRestraint:
             Indices of the protein atoms.
         n_frames : int [`None`]
             Number of frames to store data for.
-        
+
         Note
         ----
         Bond is defined by (l_atoms[0], p_atoms[0])
@@ -477,7 +473,6 @@ class BoreschRestraint:
             except AttributeError:
                 raise RuntimeError("no frame defined to get energy for")
 
-
         if calc_type != "analytical":
             raise NotImplementedError(f"{calc_type} is not implemented")
         else:
@@ -495,10 +490,10 @@ class BoreschRestraint:
         -----
         This is known to be inaccurate (see Yank).
         """
-        Gas_K = (8.314472*0.001) / 4.184 # Gas constant kcal/mol/K
-        StandardV = 1.66 # standard volume in nm^3
+        Gas_K = (8.314472*0.001) / 4.184  # Gas constant kcal/mol/K
+        StandardV = 1.66  # standard volume in nm^3
 
-        rAa = self.bond.values[frame] / 10 # convert to nm
+        rAa = self.bond.values[frame] / 10  # convert to nm
         thA = np.radians(self.angles[0].values[frame])
         thB = np.radians(self.angles[1].values[frame])
 
@@ -508,10 +503,9 @@ class BoreschRestraint:
 
         numerator = 8.0 * (np.pi**2) * StandardV
         numerator *= ((frc_bond * (frc_angle ** 2) * (frc_dihe ** 3)) ** 0.5)
-        denominator = (rAa **2) * np.sin(thA) * np.sin(thB)
+        denominator = (rAa ** 2) * np.sin(thA) * np.sin(thB)
         denominator *= ((2 * np.pi * Gas_K * temperature) ** 3)
 
         dG = - Gas_K * temperature * np.log(numerator/denominator)
 
         return dG
-
