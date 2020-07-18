@@ -478,7 +478,7 @@ class BoreschRestraint:
                 raise RuntimeError("no frame defined to get energy for")
 
 
-        if calc_type is not "analytical":
+        if calc_type != "analytical":
             raise NotImplementedError(f"{calc_type} is not implemented")
         else:
             return self._analytical_energy(frame, force_constant, temperature)
