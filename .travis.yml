@@ -59,7 +59,7 @@ before_install:
 
 install:
   - conda create --yes -n test python=$PYTHON_VERSION
-  - conda install --yes -n test numpy==1.18 MDAnalysis MDAnalysisTests pytest pytest-cov codecov -c conda-forge
+  - conda install --yes -n test numpy==1.18.5 MDAnalysis MDAnalysisTests pytest pytest-cov codecov -c conda-forge
   - conda activate test
   - python -V
     # Build and install package
