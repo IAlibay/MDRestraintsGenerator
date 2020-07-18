@@ -7,12 +7,43 @@ This file contains utility functions.
 
 import MDAnalysis as mda
 from MDAnalysis.analysis import align
+from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.analysis.rms import RMSF
+from MDAnalysis.lib.distances import capped_distance
 import warnings
 
 
+def _search_from_capped(ref_ag, config_ag, cutoff):
+    """Helper function to search for neighbouring atoms using
+    capped_distances
+
+    Parameters
+    ----------
+    anchor_ag: MDAnalysis.AtomGroup
+        Containing the anchor atom to search around (must be a single atom).
+    config_ag: MDAnalysis.AtomGroup
+        Atoms to include in the search.
+    cutoff: float
+        Cutoff search distance value.
+
+    Returns
+    -------
+    indices: list
+        List of atom indices found within cutoff distance
+    """
+    if len(ref_ag.atoms) > 1:
+        raise ValueError('too many reference atoms passed')
+
+    pairs, distances = capped_distance(ref_ag.atoms.positions,
+                                       config_ag.atoms.positions,
+                                       max_cutoff=cutoff,
+                                       return_distances=True)
+
+    return pairs, distances
+
+
 def _get_host_anchors(atomgroup, l_atom, anchor_selection, num_atoms=3,
-                     init_cutoff=5, max_cutoff=9):
+                      init_cutoff=5, max_cutoff=9):
     """Tool to get the host anchor carbon based nearest to l_atom.
 
     This function will first start by finding available atoms within the
@@ -103,7 +134,7 @@ def _get_bonded_host_atoms(atomgroup, anchor_ix,
     if len(atg1.atoms) == 0:
         errmsg = "could not find binding atoms"
         raise RuntimeError(errmsg)
-    
+
     # Loop over found indexes and see if any of them have unique bonded atoms
     for index in [ix for ix in atg1.atoms.ix]:
         sel_str = (f"(bonded index {index}) and not (index {anchor_ix}) "
@@ -117,6 +148,105 @@ def _get_bonded_host_atoms(atomgroup, anchor_ix,
     except IndexError:
         errmsg = "could not find third atom"
         raise RuntimeError(errmsg) from None
+
+
+class FindHostAtoms(AnalysisBase):
+    """Class to get a list of restraint host atoms using a distance search
+    around the ligand bonding atoms.
+
+    Parameters
+    ----------
+    atomgroup : MDAnalysis.Universe or MDAnalysis.AtomGroup
+        System for which we want to search for the restraint.
+    l_atom : int
+        Index of the ligand atom involved in the bond formation.
+    p_selection : str
+        Selection string to define the atoms to be included as possible
+        anchor points (direct binding to `l_atom`). Note: "protein and name CA"
+        will default to a sepcial routine looking for C/N atoms bonded to CA
+        unless `protein_routine` is `False`. ["protein and name CA"]
+    num_restraints : int
+        Minimum number of boresch restraints to try to generate for a given
+        ligand anchor atoms. [3]
+    protein_routine : bool
+        Option to turn off the C/N atom gathering routine if `p_selection` is
+        passed as "protein and name CA". [True]
+    search_init_cutoff : float
+        Minimum cutoff distance to look for host anchor atoms. [5.0]
+    search_max_cutoff : float
+        Maximum cutoff distance to look for host anchor atoms. [9.0]
+
+    Notes
+    -----
+        * The host anchor search will first try to find a minimum of
+          ```num_restraints`` anchors within the ``search_init_cutoff``
+          distance. Failing to do this the distance will increase by 1 A until
+          it exceeds the ``search_max_cutoff`` value. If it fails to find a
+          number of host anchors >= ``num_restraints`` it will throw a user
+          warning.
+    """
+    def __init__(self, atomgroup, l_atom, p_selection="protein and name CA",
+                 num_restraints=3, protein_routine=True,
+                 search_init_cutoff=5, search_max_cutoff=9, **kwargs):
+        super(FindHostAtoms, self).__init__(atomgroup.universe.trajectory,
+                                            **kwargs)
+        self.atomgroup = atomgroup
+        self.l_atom = l_atom
+        self.p_selection = p_selection
+        self.ligand_ag = atomgroup.select_atoms(f'index {l_atom}')
+        self.protein_ag = atomgroup.select_atoms(p_selection)
+        self.num_restraints = num_restraints
+        self.protein_routine = protein_routine
+        self.search_init_cutoff = search_init_cutoff
+        self.search_max_cutoff = search_max_cutoff
+
+    def _prepare(self):
+        self.host_atoms = []
+        self._anchor_pairs = []
+        self._anchor_distances = []
+
+    def _single_frame(self):
+        pairs, distances = _search_from_capped(self.ligand_ag,
+                                               self.protein_ag,
+                                               self.search_max_cutoff)
+        self._anchor_pairs.append(pairs)
+        self._anchor_distances.append(distances)
+
+    def _conclude(self):
+        # first we check that we found sufficient numbers of anchors
+        found_atoms = 0
+        cutoff_distance = self.search_init_cutoff
+        while found_atoms < self.num_restraints:
+            anchors = []
+            for pairs, distances in zip(self._anchor_pairs,
+                                        self._anchor_distances):
+                for pair, distance in zip(pairs, distances):
+                    if distance < cutoff_distance:
+                        index = self.protein_ag.atoms[pair[1]].index
+                        anchors.append(index)
+
+            anchors = set(anchors)
+            found_atoms = len(anchors)
+
+            if found_atoms < self.num_restraints:
+                if cutoff_distance < self.search_max_cutoff:
+                    cutoff_distance += 1
+                    wmsg = (f"Too few anchor atoms found, expanding cutoff "
+                            f"to {cutoff_distance}")
+                    warnings.warn(wmsg)
+                else:
+                    wmsg= (f"Too few anchor atoms found, carrying on with "
+                           f"{found_atoms} anchors")
+                    warnings.warn(wmsg)
+
+        for entry in anchors:
+            if self.protein_routine and (self.p_selection ==
+                                         "protein and name CA"):
+                ix2, ix3 = _get_bonded_host_cn_atoms(self.atomgroup, entry)
+            else:
+                ix2, ix3 = _get_bonded_host_atoms(self.atomgroup, entry)
+
+            self.host_atoms.append([entry, ix2, ix3])
 
 
 def find_host_atoms(atomgroup, l_atom, p_selection="protein and name CA",
@@ -137,8 +267,8 @@ def find_host_atoms(atomgroup, l_atom, p_selection="protein and name CA",
         will default to a sepcial routine looking for C/N atoms bonded to CA
         unless `protein_routine` is `False`.
     num_restraints : int
-        Number of boresch restraints to try to generate for a given ligand
-        anchor atom. [3]
+        Minimum number of boresch restraints to try to generate for a given
+        ligand anchor atom. [3]
     protein_routine : bool
         Option to turn off the C/N atom gathering routine if `p_selection` is
         passed as "protein and name CA"
@@ -155,7 +285,7 @@ def find_host_atoms(atomgroup, l_atom, p_selection="protein and name CA",
                                      init_cutoff=search_init_cutoff,
                                      max_cutoff=search_max_cutoff)
 
-    p_atoms = [ [i] for i in host_anchors ]
+    p_atoms = [[i] for i in host_anchors]
 
     for entry in p_atoms:
         if protein_routine and (p_selection == "protein and name CA"):
@@ -194,7 +324,7 @@ def find_ligand_atoms(atomgroup, l_selection="resname LIG and not name H*",
         List containing the potential ligand restraint atoms.
     """
 
-    if method is not "RMSF":
+    if method != "RMSF":
         raise NotImplementedError(f"{method} is not implemented yet")
     else:
         return _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints,
@@ -240,7 +370,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
     rmsfer = RMSF(ligand).run()
 
     # Create dictionary of index : rmsf pairs
-    rmsf_pairs = {i:x for i, x in zip(ligand.atoms.ix, rmsfer.rmsf)}
+    rmsf_pairs = {i: x for i, x in zip(ligand.atoms.ix, rmsfer.rmsf)}
 
     # Get the num_restraints top indices are potential anchor points
     anchors = sorted(rmsf_pairs, key=rmsf_pairs.get)[:num_restraints]
@@ -262,5 +392,9 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
                 angle_list.append((ixlist, score))
         angle_list.sort(key=lambda x: x[1])
         l_atoms.append(angle_list[0][0])
+
+    del(copy_u)
+    del(aligner)
+    del(rmsfer)
 
     return l_atoms

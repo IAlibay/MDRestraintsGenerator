@@ -71,6 +71,8 @@ def test_bonded_errors(u, errmsg, exclusion_str):
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 
+    # l_atoms = [[2606, 2607, 2609], [2604, 2605, 2603], [2607, 2606, 2608]]
+
     assert l_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
                        [2607, 2606, 2608]]
 
@@ -85,3 +87,11 @@ def test_find_atoms_empty_align_selection(u):
     errmsg = "no atoms matchin"
     with pytest.raises(RuntimeError, match=errmsg):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
+
+
+def test_search_from_capped_err(u):
+    lig = u.select_atoms('resname LIG')
+    prot = u.atoms
+    errmsg = "too many reference atoms passed"
+    with pytest.raises(ValueError, match=errmsg):
+        search._search_from_capped(lig, prot, 1.0)

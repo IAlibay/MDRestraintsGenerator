@@ -414,7 +414,7 @@ class BoreschRestraint:
             except AttributeError:
                 raise RuntimeError("no frame defined for writing")
 
-        if outtype is not "GMX":
+        if outtype != "GMX":
             raise RuntimeError(f"{outtype} not implemented yet")
 
         # Final check for co-linearity
@@ -478,7 +478,7 @@ class BoreschRestraint:
                 raise RuntimeError("no frame defined to get energy for")
 
 
-        if calc_type is not "analytical":
+        if calc_type != "analytical":
             raise NotImplementedError(f"{calc_type} is not implemented")
         else:
             return self._analytical_energy(frame, force_constant, temperature)
