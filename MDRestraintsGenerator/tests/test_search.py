@@ -7,7 +7,6 @@ import MDAnalysis as mda
 from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC
 from numpy.testing import assert_almost_equal
-import warnings
 import pytest
 
 
@@ -29,6 +28,20 @@ def test_no_host_anchors(u):
                                  init_cutoff=1, max_cutoff=3)
 
 
+def test_no_host_anchors_findhostatoms(u):
+    """Throws a warning that too few anchors have been found"""
+
+    errmsg = "Too few anchor atoms found, carrying on with"
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom, search_init_cutoff=1,
+                                   search_max_cutoff=3)
+
+    with pytest.warns(UserWarning, match=errmsg):
+        psearch.run()
+
+
 def test_cutoff_warning(u):
     """Throws a warning that cutoff is expanding"""
 
@@ -42,12 +55,45 @@ def test_cutoff_warning(u):
                                  init_cutoff=5, max_cutoff=9)
 
 
+def test_cutoff_warning_findhostatoms(u):
+    """Throws a warning that cutoff is expanding"""
+
+    errmsg = "Too few anchor atoms found, expanding cutoff"
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom)
+
+    with pytest.warns(UserWarning, match=errmsg):
+        psearch.run()
+
+
+def test_findhostatoms_names(u):
+    """Checks that the first, second, and third index belong to the right
+    atom types"""
+
+    l_atom = 2611
+
+    psearch = search.FindHostAtoms(u, l_atom)
+
+    psearch.run()
+
+    for atoms in psearch.host_atoms:
+        assert u.atoms[atoms[0]].name == "CA"
+        assert u.select_atoms(f'index {atoms[0]} and bonded index {atoms[1]}')
+        assert u.atoms[atoms[1]].name == "C"
+        selstring = (f'index {atoms[1]} and (bonded index {atoms[0]}) and '
+                     f'(bonded index {atoms[2]})')
+        assert u.select_atoms(selstring)
+        assert u.atoms[atoms[2]].name == "N"
+
+
 def test_basic_bonded(u):
     """Basic test for getting a bonded atom"""
 
     p_atom = 1322
     expected_second_atom = 1320
-    expected_third_atom = 1318 
+    expected_third_atom = 1318
 
     second_atom, third_atom = search._get_bonded_host_atoms(u, p_atom)
 
@@ -85,3 +131,11 @@ def test_find_atoms_empty_align_selection(u):
     errmsg = "no atoms matchin"
     with pytest.raises(RuntimeError, match=errmsg):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
+
+
+def test_search_from_capped_err(u):
+    lig = u.select_atoms('resname LIG')
+    prot = u.atoms
+    errmsg = "too many reference atoms passed"
+    with pytest.raises(ValueError, match=errmsg):
+        search._search_from_capped(lig, prot, 1.0)

@@ -6,7 +6,7 @@ env:
     - CYTHON_TRACE_NOGIL=1
     - MPLBACKEND=agg
       # scipy and matplotlib are in MDAnalysis
-    - CONDA_DEPENDENCIES="MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
+    - CONDA_DEPENDENCIES="numpy==1.18.5 MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
     - CONDA_CHANNELS='conda-forge'
     - CONDA_CHANNEL_PRIORITY=True
 
@@ -42,13 +42,25 @@ before_install:
   - uname -a
   - df -h
   - ulimit -a
+  # get the right anaconda version
+  - |
+     if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
+       wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+     else
+       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+     fi
+  - mkdir $HOME/.conda
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - $HOME/miniconda/bin/conda init bash
+  - source ~/.bash_profile
+  - conda activate base
+  - conda update --yes conda
 
 
 install:
-
-    # Create test environment for package (using astropy's ci-helper)
-  - git clone git://github.com/astropy/ci-helpers.git
-  - source ci-helpers/travis/setup_conda.sh
+  - conda create --yes -n test python=$PYTHON_VERSION
+  - conda install --yes -n test numpy==1.18.5 MDAnalysis MDAnalysisTests pytest pytest-cov codecov -c conda-forge
+  - conda activate test
   - python -V
     # Build and install package
   - python setup.py develop --no-deps

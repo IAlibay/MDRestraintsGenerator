@@ -5,11 +5,8 @@ A framework for generating restraints for MD simulations
 Contains main restraint object classes
 """
 
-import MDAnalysis as mda
 from MDAnalysis.analysis.base import AnalysisBase
 from .datatypes import BoreschRestraint
-import numpy as np
-import warnings
 
 
 class FindBoreschRestraint(AnalysisBase):
