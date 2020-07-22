@@ -19,12 +19,37 @@ The code currently only looks at BoreschRestraints, but we aim to extend to:
 Note: This is considered to be pre-production code, a lot is left to do and
 major changes will happen at any time.
 
+## Installation
+
+Installation is currently only possible from source. This can be done in the following manner:
+
+```
+git clone https://github.com/bigginlab/MDRestraintsGenerator.git
+cd MDRestraintsGenerator
+pip install .
+```
+
 ## How to use
 
-Currently implemented; FindBoreschRestraint
+The code currently only implements a means of deriving Boresch restraints for GROMACS simulations.
+To achieve this, the following underlying methods are provided:
 
-This works as a usual AnalysisBase object, please see `scripts` for a basic
-usage example.
+  1) A function to pick stable points in ligands for restraint attachment
+     (`search.find_ligand_atoms`).
+  2) A class for picking host restraint addition points (`search.FindHostAtoms`).
+  3) A class for analysing a list of possible Boresch restraints over a given MD simulation and
+     finding the most stable choice of restraint atoms (`restraints.FindBoreschRestraint`).
+
+An example use script is provided under `scripts.BoreschRestraintGMX.py`. Documentation docstrings
+are provided for all functions and classes. These can be accessed by calling `help(function)`.
+
+## Testing
+
+A set of unit tests are provided under `MDRestraintsGenerator.tests`. To run these you will need
+to have `pytest` installed. The tests can be run in the following manner:
+```
+pytest -v MDRestraintsGenerator.tests
+```
 
 ### Dependencies
 
