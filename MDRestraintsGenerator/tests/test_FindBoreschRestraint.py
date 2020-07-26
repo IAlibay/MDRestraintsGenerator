@@ -99,7 +99,7 @@ def test_basic_regression_ligand_search(u):
                  [2606, 1563, 1569, 1571])
 
 
-@pytest.mark.skipif(sys.platform == 'linux', reason='known segfaults')
+@pytest.mark.skipif(os.environ.get('TRAVIS_TEST'), reason='known segfaults')
 def test_basic_regression_ligand_protein_search(u):
     """Regression test to check we get the same answer on a ligand search"""
 
