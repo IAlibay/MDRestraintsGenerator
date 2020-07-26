@@ -9,6 +9,7 @@ from .datafiles import T4_TPR, T4_XTC, T4_OGRO, T4_OTOP
 from numpy.testing import assert_almost_equal, assert_equal
 import filecmp
 import pytest
+import os
 import sys
 
 
@@ -99,7 +100,8 @@ def test_basic_regression_ligand_search(u):
                  [2606, 1563, 1569, 1571])
 
 
-@pytest.mark.skipif(os.environ.get('TRAVIS_TEST'), reason='known segfaults')
+@pytest.mark.skipif((os.environ.get('TRAVIS_TEST') and sys.platform == 'linux'),
+                    reason='known segfaults')
 def test_basic_regression_ligand_protein_search(u):
     """Regression test to check we get the same answer on a ligand search"""
 

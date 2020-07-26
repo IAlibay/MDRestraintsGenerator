@@ -116,7 +116,8 @@ def test_bonded_errors(u, errmsg, exclusion_str):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
 
-@pytest.mark.skipif(os.environ.get('TRAVIS_TEST'), reason='known segfault')
+@pytest.mark.skipif((os.environ.get('TRAVIS_TEST') and sys.platform == 'linux'),
+                            reason='known segfaults')
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 
