@@ -4,7 +4,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 
 import MDAnalysis as mda
 import MDRestraintsGenerator.datatypes as dtypes
-from .datafiles import T4_TPR, T4_XTC
+from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 import pytest
 import os
 
@@ -74,6 +74,20 @@ def test_Boresch_plotting_notanalysed(tmpdir, u):
         boresch.plot()
 
 
+def test_Boresch_write_colinear():
+    u = mda.Universe(T4_OGRO)
+
+    l_atoms = [2606, 2610, 2611]
+    p_atoms = [1218, 1216, 1214]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    boresch.store_frame(0)
+
+    with pytest.raises(RuntimeError, match="colinearity"):
+        boresch.write(frame=0)
+
+
 def test_Boresch_write_noframe(u):
     l_atoms = [0, 1, 2]
     p_atoms = [4, 5, 6]
@@ -96,3 +110,27 @@ def test_Boresch_write_wrongtype(u):
 
     with pytest.raises(RuntimeError, match=errmsg):
         boresch.write(frame=0, outtype="AMBER")
+
+
+def test_standard_state_noframe_error(u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    errmsg = "no frame defined to get energy for"
+
+    with pytest.raises(RuntimeError, match=errmsg):
+        boresch.standard_state()
+
+
+def test_standard_state_wrongmethod_error(u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    errmsg = "foo is not implemented"
+
+    with pytest.raises(NotImplementedError, match=errmsg):
+        boresch.standard_state(frame=0, calc_type='foo')

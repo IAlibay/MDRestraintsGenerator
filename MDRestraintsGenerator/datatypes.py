@@ -417,7 +417,7 @@ class BoreschRestraint:
         for angle in self.angles:
             if (angle.values[frame] < 25) or (angle.values[frame] > 155):
                 errmsg = (f"picked frame contains angle near colinearity ",
-                          f"value: {angle.value[frame]}\n",
+                          f"value: {angle.values[frame]}\n",
                           f"This is a bad idea, choose another set of ",
                           f"restraint atoms.")
                 raise RuntimeError(errmsg)
