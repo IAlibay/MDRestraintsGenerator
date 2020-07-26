@@ -8,6 +8,8 @@ from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC
 from numpy.testing import assert_almost_equal
 import pytest
+import sys
+import os
 
 
 @pytest.fixture(scope='module')
@@ -114,6 +116,8 @@ def test_bonded_errors(u, errmsg, exclusion_str):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
 
+@pytest.mark.skipif((os.environ.get('TRAVIS_TEST') and sys.platform == 'linux'),
+                            reason='known segfaults')
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 

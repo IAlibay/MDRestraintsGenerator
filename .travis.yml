@@ -9,6 +9,7 @@ env:
     - CONDA_DEPENDENCIES="numpy==1.18.5 MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
     - CONDA_CHANNELS='conda-forge'
     - CONDA_CHANNEL_PRIORITY=True
+    - TRAVIS_TEST=True
 
 
 # Run jobs on container-based infrastructure, can be overridden per job
