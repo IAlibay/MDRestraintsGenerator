@@ -14,6 +14,7 @@ Contents:
 """
 
 import MDRestraintsGenerator.writers as writers
+from pathlib import Path
 
 import MDAnalysis as mda
 import numpy as np
@@ -422,15 +423,22 @@ class BoreschRestraint:
                           f"restraint atoms.")
                 raise RuntimeError(errmsg)
 
-        self._write_gmx(index=frame, force_constant=force_constant)
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = '.'
 
-    def _write_gmx(self, index, force_constant):
+        self._write_gmx(index=frame, path=dirpath,
+                        force_constant=force_constant)
+
+    def _write_gmx(self, index, path, force_constant):
         # seek corre
         self.atomgroup.universe.trajectory[index]
-        self.atomgroup.write('ClosestRestraintFrame.gro')
+        self.atomgroup.write(f'{path}/ClosestRestraintFrame.gro')
 
         # write out top file
-        with open('BoreschRestraint.top', 'w') as rfile:
+        with open(f'{path}/BoreschRestraint.top', 'w') as rfile:
             rfile.write('\n')
             rfile.write('; restraints\n')
             rfile.write('[ intermolecular_interactions ]\n')
