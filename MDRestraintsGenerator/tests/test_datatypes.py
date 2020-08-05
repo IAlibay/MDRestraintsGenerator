@@ -69,6 +69,22 @@ def test_Boresch_plotting(tmpdir, u, frame):
             assert os.path.isfile(name)
 
 
+def test_Boresch_plotting_path(tmpdir, u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    boresch.analyze()
+
+    with tmpdir.as_cwd():
+        boresch.plot(frame=None, path='testdir')
+        for name in ['./testdir/bond_1.png', './testdir/angle_1.png',
+                     './testdir/angle_2.png', './testdir/dihedral_1.png', 
+                     './testdir/dihedral_2.png', './testdir/dihedral_3.png']:
+            assert os.path.isfile(name)
+
+
 def test_Boresch_plotting_notanalysed(tmpdir, u):
     l_atoms = [0, 1, 2]
     p_atoms = [4, 5, 6]

@@ -57,7 +57,7 @@ class VectorData:
         """Returns (value-mean)**2 """
         self.ms_values = (self.values - self.mean)**2
 
-    def plot(self, picked_frame=None):
+    def plot(self, picked_frame=None, path='./'):
         """Plots the data
 
         Input
@@ -134,7 +134,7 @@ class VectorData:
         xstring = f"{self.atype} [{self.units}]"
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
-        filename = f"{self.filename}.png"
+        filename = f"{path}/{self.filename}.png"
         plt.legend(loc="best")
         plt.savefig(filename, format="png")
         plt.close()
@@ -383,12 +383,18 @@ class BoreschRestraint:
             except AttributeError:
                 pass
 
-        self.bond.plot(picked_frame=frame)
-        self.angles[0].plot(picked_frame=frame)
-        self.angles[1].plot(picked_frame=frame)
-        self.dihedrals[0].plot(picked_frame=frame)
-        self.dihedrals[1].plot(picked_frame=frame)
-        self.dihedrals[2].plot(picked_frame=frame)
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = './'
+
+        self.bond.plot(picked_frame=frame, path=dirpath)
+        self.angles[0].plot(picked_frame=frame, path=dirpath)
+        self.angles[1].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[0].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[1].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[2].plot(picked_frame=frame, path=dirpath)
 
     def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX"):
         """Writes out boresch restraint
