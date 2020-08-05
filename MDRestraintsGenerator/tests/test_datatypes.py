@@ -7,11 +7,18 @@ import MDRestraintsGenerator.datatypes as dtypes
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 import pytest
 import os
+from pathlib import Path
+from numpy.testing import assert_almost_equal
 
 
 @pytest.fixture(scope='module')
 def u():
     return mda.Universe(T4_TPR, T4_XTC)
+
+
+@pytest.fixture(scope='module')
+def u_gro():
+    return mda.Universe(T4_OGRO)
 
 
 def test_vector_store():
@@ -62,6 +69,22 @@ def test_Boresch_plotting(tmpdir, u, frame):
             assert os.path.isfile(name)
 
 
+def test_Boresch_plotting_path(tmpdir, u):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
+
+    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+
+    boresch.analyze()
+
+    with tmpdir.as_cwd():
+        boresch.plot(frame=None, path='testdir')
+        for name in ['./testdir/bond_1.png', './testdir/angle_1.png',
+                     './testdir/angle_2.png', './testdir/dihedral_1.png', 
+                     './testdir/dihedral_2.png', './testdir/dihedral_3.png']:
+            assert os.path.isfile(name)
+
+
 def test_Boresch_plotting_notanalysed(tmpdir, u):
     l_atoms = [0, 1, 2]
     p_atoms = [4, 5, 6]
@@ -74,13 +97,28 @@ def test_Boresch_plotting_notanalysed(tmpdir, u):
         boresch.plot()
 
 
-def test_Boresch_write_colinear():
-    u = mda.Universe(T4_OGRO)
+def test_Boresch_write_path(tmpdir, u_gro):
+    l_atoms = [0, 1, 2]
+    p_atoms = [4, 5, 6]
 
+    boresch = dtypes.BoreschRestraint(u_gro, l_atoms, p_atoms)
+
+    boresch.store_frame(0)
+
+    with tmpdir.as_cwd():
+        Path('./testdir').mkdir()
+        boresch.write(frame=0, path='./testdir')
+
+        u2_gro = mda.Universe('./testdir/ClosestRestraintFrame.gro')
+
+        assert_almost_equal(u_gro.atoms.positions, u2_gro.atoms.positions)
+
+
+def test_Boresch_write_colinear(u_gro):
     l_atoms = [2606, 2610, 2611]
     p_atoms = [1218, 1216, 1214]
 
-    boresch = dtypes.BoreschRestraint(u, l_atoms, p_atoms)
+    boresch = dtypes.BoreschRestraint(u_gro, l_atoms, p_atoms)
 
     boresch.store_frame(0)
 

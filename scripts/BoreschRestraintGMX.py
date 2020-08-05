@@ -40,6 +40,8 @@ if __name__ == "__main__":
                             help='simulation temperature')
         parser.add_argument('--force_constant', type=float, default=10.0,
                             help='restraint force constant')
+        parser.add_argument('--outpath', default='./',
+                            help='output path for writing files')
         args = parser.parse_args()
         return args
 
@@ -73,10 +75,11 @@ if __name__ == "__main__":
     boresch.run()
 
     # Plot out the statistics
-    boresch.restraint.plot()
+    boresch.restraint.plot(path=args.outpath)
 
     # Write out the intermolecular section to a topology
-    boresch.restraint.write(force_constant=args.force_constant)
+    boresch.restraint.write(path=args.outpath,
+                            force_constant=args.force_constant)
 
     dG_off = boresch.restraint.standard_state(force_constant=args.force_constant,
                                               temperature=args.temperature)

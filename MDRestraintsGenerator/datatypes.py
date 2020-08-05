@@ -14,6 +14,7 @@ Contents:
 """
 
 import MDRestraintsGenerator.writers as writers
+from pathlib import Path
 
 import MDAnalysis as mda
 import numpy as np
@@ -56,7 +57,7 @@ class VectorData:
         """Returns (value-mean)**2 """
         self.ms_values = (self.values - self.mean)**2
 
-    def plot(self, picked_frame=None):
+    def plot(self, picked_frame=None, path='./'):
         """Plots the data
 
         Input
@@ -133,7 +134,7 @@ class VectorData:
         xstring = f"{self.atype} [{self.units}]"
         plt.xlabel(xstring)
         plt.ylabel("Number of frames")
-        filename = f"{self.filename}.png"
+        filename = f"{path}/{self.filename}.png"
         plt.legend(loc="best")
         plt.savefig(filename, format="png")
         plt.close()
@@ -382,12 +383,18 @@ class BoreschRestraint:
             except AttributeError:
                 pass
 
-        self.bond.plot(picked_frame=frame)
-        self.angles[0].plot(picked_frame=frame)
-        self.angles[1].plot(picked_frame=frame)
-        self.dihedrals[0].plot(picked_frame=frame)
-        self.dihedrals[1].plot(picked_frame=frame)
-        self.dihedrals[2].plot(picked_frame=frame)
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = './'
+
+        self.bond.plot(picked_frame=frame, path=dirpath)
+        self.angles[0].plot(picked_frame=frame, path=dirpath)
+        self.angles[1].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[0].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[1].plot(picked_frame=frame, path=dirpath)
+        self.dihedrals[2].plot(picked_frame=frame, path=dirpath)
 
     def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX"):
         """Writes out boresch restraint
@@ -422,15 +429,22 @@ class BoreschRestraint:
                           f"restraint atoms.")
                 raise RuntimeError(errmsg)
 
-        self._write_gmx(index=frame, force_constant=force_constant)
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = '.'
 
-    def _write_gmx(self, index, force_constant):
+        self._write_gmx(index=frame, path=dirpath,
+                        force_constant=force_constant)
+
+    def _write_gmx(self, index, path, force_constant):
         # seek corre
         self.atomgroup.universe.trajectory[index]
-        self.atomgroup.write('ClosestRestraintFrame.gro')
+        self.atomgroup.write(f'{path}/ClosestRestraintFrame.gro')
 
         # write out top file
-        with open('BoreschRestraint.top', 'w') as rfile:
+        with open(f'{path}/BoreschRestraint.top', 'w') as rfile:
             rfile.write('\n')
             rfile.write('; restraints\n')
             rfile.write('[ intermolecular_interactions ]\n')
