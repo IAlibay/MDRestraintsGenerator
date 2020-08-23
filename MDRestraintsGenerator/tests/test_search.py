@@ -90,6 +90,16 @@ def test_findhostatoms_names(u):
         assert u.atoms[atoms[2]].name == "N"
 
 
+@pytest.mark.parametrize('ix1, ix2, ix3', [
+    [2560, 2577, 2579], [2581, 2579, 2577]
+])
+def test_bonded_cn(u, ix1, ix2, ix3):
+    """Tests for getting bonded CN atoms"""
+    second_atom, third_atom = search._get_bonded_host_cn_atoms(u, ix1)
+    assert second_atom == ix2
+    assert third_atom == ix3
+
+
 def test_basic_bonded(u):
     """Basic test for getting a bonded atom"""
 

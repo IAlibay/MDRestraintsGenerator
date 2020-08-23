@@ -105,12 +105,24 @@ def _get_bonded_host_cn_atoms(atomgroup, anchor_ix):
     anchor_ag = atomgroup.select_atoms(f'index {anchor_ix}')
     resid = anchor_ag.atoms[0].resid
     c_atom_str = f"(backbone) and (name C) and (resid {resid})"
-    n_atom_str = f"(backbone) and (name N) and (resid {resid+1})"
-
     c_atom = atomgroup.select_atoms(c_atom_str)
+    c_atom_ix = c_atom.atoms[0].ix
+    n_atom_str = (f"(backbone) and (name N) and (resid {resid+1}) and "
+                  f"(bonded index {c_atom_ix})")
     n_atom = atomgroup.select_atoms(n_atom_str)
 
-    return c_atom.atoms[0].ix, n_atom.atoms[0].ix
+    if n_atom:
+        return c_atom.atoms[0].ix, n_atom.atoms[0].ix
+    else:
+        # Issue 30 - terminal residue
+        # reverse selection to go to residue-1 rather than residue+1
+        n_atom_str = f"(backbone) and (name N) and (resid {resid})"
+        n_atom = atomgroup.select_atoms(n_atom_str)
+        n_atom_ix = n_atom.atoms[0].ix
+        c_atom_str = (f"(backbone) and (name C) and (resid {resid-1}) and "
+                      f"(bonded index {n_atom_ix})")
+        c_atom = atomgroup.select_atoms(c_atom_str)
+        return n_atom.atoms[0].ix, c_atom.atoms[0].ix
 
 
 def _get_bonded_host_atoms(atomgroup, anchor_ix,
