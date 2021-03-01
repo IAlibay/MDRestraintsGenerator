@@ -16,7 +16,7 @@ The code currently only looks at BoreschRestraints, but we aim to extend to:
 - Attach Pull Restraint style restraints
 - Complex multidimensional restraints
 
-Note: This is considered to be pre-production code, a lot is left to do and
+Note: This is non-mature code, a lot is left to do and
 major changes will happen at any time.
 
 ## Installation
