@@ -3,6 +3,7 @@ MDRestraintsGenerator
 [//]: # (Badges)
 [![Travis Build Status](https://travis-ci.com/Bigginlab/MDRestraintsGenerator.svg?branch=master)](https://travis-ci.com/Bigginlab/MDRestraintsGenerator)
 [![codecov](https://codecov.io/gh/Bigginlab/MDRestraintsGenerator/branch/master/graph/badge.svg)](https://codecov.io/gh/Bigginlab/MDRestraintsGenerator/branch/master)
+[![DOI](https://zenodo.org/badge/185426662.svg)](https://zenodo.org/badge/latestdoi/185426662)
 
 # MDRestraintsGenerator
 
