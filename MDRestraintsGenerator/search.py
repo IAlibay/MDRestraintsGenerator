@@ -13,7 +13,7 @@ from MDAnalysis.lib.distances import capped_distance
 import warnings
 
 
-def _search_from_capped(ref_ag, config_ag, cutoff):
+def _search_from_capped(ref_ag, config_ag, universe, cutoff):
     """Helper function to search for neighbouring atoms using
     capped_distances
 
@@ -23,6 +23,8 @@ def _search_from_capped(ref_ag, config_ag, cutoff):
         Containing the anchor atom to search around (must be a single atom).
     config_ag: MDAnalysis.AtomGroup
         Atoms to include in the search.
+    universe: MDAnalysis.Universe
+        Universe of atomgroups passed (used for box dimensions).
     cutoff: float
         Cutoff search distance value.
 
@@ -37,6 +39,7 @@ def _search_from_capped(ref_ag, config_ag, cutoff):
     pairs, distances = capped_distance(ref_ag.atoms.positions,
                                        config_ag.atoms.positions,
                                        max_cutoff=cutoff,
+                                       box=universe.dimensions,
                                        return_distances=True)
 
     return pairs, distances
@@ -220,6 +223,7 @@ class FindHostAtoms(AnalysisBase):
     def _single_frame(self):
         pairs, distances = _search_from_capped(self.ligand_ag,
                                                self.protein_ag,
+                                               self.atomgroup.universe,
                                                self.search_max_cutoff)
         self._anchor_pairs.append(pairs)
         self._anchor_distances.append(distances)
