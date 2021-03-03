@@ -152,4 +152,4 @@ def test_search_from_capped_err(u):
     prot = u.atoms
     errmsg = "too many reference atoms passed"
     with pytest.raises(ValueError, match=errmsg):
-        search._search_from_capped(lig, prot, 1.0)
+        search._search_from_capped(lig, prot, u.dimensions, 1.0)

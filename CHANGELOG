@@ -1,0 +1,15 @@
+MDRestraints Generator CHANGELOG
+
+AUTHORS: IAlibay
+
+
+* 0.2.0 : ??/??/????
+
+Fixes
+  * capped_distance call in _search_capped now accounts for box dimensions
+    (PR #35)
+
+* 0.1.0 : 01/03/2021
+
+Changes
+  * Initial release, includes support for Boresch restraints.
