@@ -27,8 +27,8 @@ class VectorData:
     def __init__(self, n_frames):
         """Initliase the vector data object.
 
-        Input
-        -----
+        Parameters
+        ----------
         n_frames : int, the number of frames in trajectory
         """
         self.values = np.zeros(n_frames)
@@ -83,17 +83,16 @@ class VectorData:
             return prob_data
 
         def get_hist_binrange(atype, in_values):
-            if atype == "bond":
-                bin_width = 0.2
-                return np.arange(in_values.min(), in_values.max() + bin_width,
-                                 bin_width)
             if atype == "angle":
                 bin_width = 2.0
                 return np.arange(0, 180 + bin_width, bin_width)
-
-            if atype == "dihedral":
+            elif atype == "dihedral":
                 bin_width = 4
                 return np.arange(-180, 180 + bin_width, bin_width)
+            else:
+                bin_width = 0.2
+                return np.arange(in_values.min(), in_values.max() + bin_width,
+                                 bin_width)
 
         try:
             self.mean
@@ -144,8 +143,8 @@ class Bond(VectorData):
     def __init__(self, ix1, ix2, atomgroup, n_frames, suffix_index=1):
         """Initialise the Bond object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in bond
         ix2 : int
@@ -158,7 +157,7 @@ class Bond(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set values from VectorData
-        super(Bond, self).__init__(n_frames)
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2], atomgroup.universe)
         self.atype = "bond"
@@ -175,8 +174,8 @@ class Angle(VectorData):
     def __init__(self, ix1, ix2, ix3, atomgroup, n_frames, suffix_index=1):
         """Initialise the Angle object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in angle
         ix2 : int
@@ -191,7 +190,7 @@ class Angle(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set value from VectorData
-        super(Angle, self).__init__(n_frames)
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3], atomgroup.universe)
         self.atype = "angle"
@@ -210,8 +209,8 @@ class Dihedral(VectorData):
                  suffix_index=1):
         """Initialise the Dihedral object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in dihedral
         ix2 : int
@@ -227,8 +226,8 @@ class Dihedral(VectorData):
         suffix_index : int
             number to add as a filename index when plotting [1]
         """
-        # Set value from VectorData
-        super(Dihedral, self).__init__(n_frames)
+        # Set values from VectorData
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4],
                                        atomgroup.universe)
@@ -242,6 +241,196 @@ class Dihedral(VectorData):
         """
         self.values[index] = self.atomgroup.dihedral.value()
 
+
+class COGDistance(VectorData):
+    """Class for storing Center Of Geometry (COG) distances between
+    AtomGroups"""
+    def __init__(self, atomgroup1, atomgroup2, n_frames, suffix_index=1):
+        """Initialise the COG distance object.
+
+        Parameters
+        ----------
+        atomgroup1 : MDAnalysis.AtomGroup
+            `AtomGroup` of the first set of atoms to get a COG for.
+        atomgroup2 : MDAnalysis.AtomGroup
+            `AtomGroup` of the second set of atoms to get a COG for.
+        n_frames : int
+            number of frames for which the distance will be recorded.
+        suffix_index : int
+            number to add as a filename index when plotting [1]
+        """
+        # Initialise values
+        super().__init__(n_frames)
+        self.ags = [atomgroup1, atomgroup2]
+        self.atype = "COG-distance"
+        self.periodic = False
+        self.units = "Å"
+        self.filename = f"{self.atype}_{suffix_index}"
+
+    def store(self, index):
+        """Store the current timestep's COG distance between the two
+        AtomGroups"""
+        self.values[index] = np.linalg.norm(
+            self.ags[0].center_of_geometry() - self.ags[1].center_of_geometry()
+        )
+
+
+class COMDistance(VectorData):
+    """Class for storing Center of Mass (COM) distances between AtomGroups"""
+    def __init__(self, atomgroup1, atomgroup2, n_frames, suffix_index=1):
+        """Initialise the COM distance object.
+
+        Parameters
+        ----------
+        atomgroup1 : MDAnalysis.AtomGroup
+            `AtomGroup` of the first set of atoms to get a COM for.
+        atomgroup2 : MDAnalysis.AtomGroup
+            `AtomGroup` of the second set of atoms to get a COM for.
+        n_frames : int
+            number of frames for which the distance will be recorded.
+        suffix_index : int
+            number to add as a filename index when plotting [1]
+        """
+        # Initialise values
+        super().__init__(n_frames)
+        self.ags = [atomgroup1, atomgroup2]
+        self.atype = "COM-distance"
+        self.periodic = False
+        self.units = "Å"
+        self.filename = f"{self.atype}_{suffix_index}"
+
+    def store(self, index):
+        """Store the current timestep's COM distance between the two
+        AtomGroups"""
+        self.values[index] = np.linalg.norm(
+            self.ags[0].center_of_mass() - self.ags[0].center_of_mass()
+        )
+
+
+class FlatBottomRestraint:
+    """A class to store and analyze the COM distances required for a
+    two group COM flat bottom restraint"""
+    def __init__(self, atomgroup1, atomgroup2, group1_name="ligand",
+                 group2_name="binding_site", n_frames=None):
+        """Init routine for the FlatBottomRestraint class.
+
+        Parameters
+        ----------
+        atomgroup1: MDAnalysis.AtomGroup
+            AtomGroup of the first set of atoms involved in the COM distance
+        atomgroup2: MDAnalysis.AtomGroup
+            AtomGroup of the second set of atoms involved in the COM distance
+        group1_name: str ['ligand']
+            Name to identify the atoms involved in `atomgroup1`
+        group2_name: str ['binding_site']
+            Name to identify the atoms involved in `atomgroup2`
+        n_frames : int [`None`]
+            Number of frames to analyze. Defaults of `None` assumes all frames
+            in the trajectory of `atomgroup1`.
+        others...
+        """
+        self.atomgroups = [atomgroup1, atomgroup2]
+
+        # Either default to all the frames in the first atomgroup (if `None`)
+        # or whatever defined value was passed
+        if n_frames is None:
+            self.n_frames = atomgroup1.universe.trajectory.n_frames
+        else:
+            self.n_frames = n_frames
+
+        # Create the COM object
+        # Note: we probably should add a check for mass
+        self.com = COMDistance(self.atomgroups[0], self.atomgroups[1],
+                               self.n_frames)
+
+    def store_frame(self, index):
+        """Function to store data for COM object
+
+        Paramters
+        ---------
+        index : current frame number
+        """
+        self.com.store(index)
+
+    def analyze(self):
+        """Function to analyze the COM object data"""
+        self.com.analyze()
+        self.abs_deviation = np.absolute(self.com.mean - self.com.values)
+        self.min_frame = self.abs_deviation.argmin()
+        self.min_abs_deviation = np.min(self.abs_deviation)
+        self.max_
+
+    def plot(self, frame=None, path=None):
+        """Plots all the analyzed data
+
+        Input
+        -----
+        frame : int
+            index of chosen frame to plot.
+        path : str
+            path to location where files should be written.
+        """
+        # TODO: move this to a restraint class or a some kind of method...
+        if frame is None:
+            try:
+                frame = self.min_frame
+            except AttributeError:
+                pass
+
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = './'
+
+        self.com.plot(picked_frame=frame, path=dirpath)
+
+    def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX"):
+        """Writes out the FlatBottom restraint.
+
+        Input
+        -----
+        frame : int
+            index of frame to write out, will default to frame closes to mean.
+        path : str
+            path to location where files should be written.
+        force_constant : float
+            strength of the Boresch restraint [10.0 kcal/mol]
+        outtype : str
+            type of restraint to write, for now only "GMX" is accepted.
+
+        TODO
+        ----
+        * pmemd.cuda support COM distance restraints - this should be easy
+          enough to implement.
+        """
+        if frame is None:
+            try:
+                frame = self.min_frame
+            except AttributeError:
+                raise RuntimeError("no frame defined for writing")
+
+        if outtype != "GMX":
+            raise RuntimeError(f"{outtype} not implemented yet")
+
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = '.'
+
+        self._write_gmx(index=frame, path=dirpath,
+                        force_constant=force_constant)
+
+    def _write_gmx(self, index, path, force_constant):
+        """Writes out a flat bottom restraint for the GMX pull code"""
+        # seek chosen frame
+        self.atomgroup.universe.trajectory[index]
+        self.atomgroup.write(f'{path}/ClosestRestraintFrame.gro')
+
+        ## do MDP writing here
+
+    
 
 class BoreschRestraint:
     """A class to store and analyze the bond/angle/diehdral information related
@@ -439,7 +628,7 @@ class BoreschRestraint:
                         force_constant=force_constant)
 
     def _write_gmx(self, index, path, force_constant):
-        # seek corre
+        # seek chosen frame
         self.atomgroup.universe.trajectory[index]
         self.atomgroup.write(f'{path}/ClosestRestraintFrame.gro')
 
