@@ -1,0 +1,68 @@
+name: push_pull_ci
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+env:
+  CONDA_DEPS: "MDAnalysis MDAnalysisTests pytest pytest-cov codecov"
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS]
+        python-version: [3.6, 3.7, 3.8]
+
+    env:
+      CYTHON_TRACE_NOGIL: 1
+      MPLBACKEND: agg
+      GH_OS: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - setup_miniconda:
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          auto-update-conda: true
+          channels: conda-forge
+          add-pip-as-python-dependency: true
+          architecture: x64
+
+      - name: install_deps
+        run: |
+          conda install ${{ env.CONDA_DEPS }}
+
+      - name: check_setup
+        run: |
+          echo ${GH_OS}
+          which python
+          which conda
+          which pip
+          conda info
+
+      - name: install_mdrg
+        run: |
+          python setup.py develop --no-deps
+
+      - name: run_tests
+        run: |
+          pytest -v --cov=MDRestraintsGenerator --cov-report=xml MDRestraintsGenerator/tests/
+
+      - name: codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: coverage.xml
+          fail_ci_if_error: True
+          verbose: True
