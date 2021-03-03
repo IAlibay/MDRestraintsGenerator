@@ -1,7 +1,7 @@
 MDRestraintsGenerator
 ==============================
 [//]: # (Badges)
-![GH Actions CI](https://github.com/IAlibay/MDRestraintsGenerator/actions/workflows/push_pull_ci/badge.svg)
+![GH Actions CI](https://github.com/IAlibay/MDRestraintsGenerator/actions/workflows/ci.yaml/badge.svg)
 [![codecov](https://codecov.io/gh/Bigginlab/MDRestraintsGenerator/branch/master/graph/badge.svg)](https://codecov.io/gh/Bigginlab/MDRestraintsGenerator/branch/master)
 [![DOI](https://zenodo.org/badge/185426662.svg)](https://zenodo.org/badge/latestdoi/185426662)
 
