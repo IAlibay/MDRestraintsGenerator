@@ -30,6 +30,17 @@ def test_no_host_anchors(u):
                                  init_cutoff=1, max_cutoff=3)
 
 
+def test_too_many_ligand_atoms_findhostatoms(u):
+    """Throws a ValueError if too many ligand atoms have been passed"""
+
+    errmsg = "Too many ligand atoms passed."
+
+    l_atom = "2611 2612"
+
+    with pytest.raises(ValueError, match=errmsg):
+        psearch = search.FindHostAtoms(u, l_atom)
+
+
 def test_no_host_anchors_findhostatoms(u):
     """Throws a warning that too few anchors have been found"""
 

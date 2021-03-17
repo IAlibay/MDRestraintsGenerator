@@ -5,6 +5,7 @@ A framework for generating restraints for MD simulations
 This file contains utility functions.
 """
 
+import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis import align
 from MDAnalysis.analysis.base import AnalysisBase
@@ -13,36 +14,42 @@ from MDAnalysis.lib.distances import capped_distance
 import warnings
 
 
-def _search_from_capped(ref_ag, config_ag, universe, cutoff):
+def _search_from_capped(ref_ag, config_ag, universe, cutoff,
+                        return_distances=True):
     """Helper function to search for neighbouring atoms using
     capped_distances
 
     Parameters
     ----------
-    anchor_ag: MDAnalysis.AtomGroup
-        Containing the anchor atom to search around (must be a single atom).
+    ref_ag: MDAnalysis.AtomGroup
+        Reference atoms to search around.
     config_ag: MDAnalysis.AtomGroup
         Atoms to include in the search.
     universe: MDAnalysis.Universe
         Universe of atomgroups passed (used for box dimensions).
     cutoff: float
-        Cutoff search distance value.
+        Cutoff search distance value from reference.
+    return_distance: bool [`True`]
+        Toggles the return of distances for each atom pair.
 
     Returns
     -------
-    indices: list
-        List of atom indices found within cutoff distance
+    results: list
+        List of up to two items containing the atom pairs within the cutoff,
+        and if return_distances is True, the distances for each pair.
+
+
+    .. versionchanged:: 0.2.0
+       Now optionally returns the distances.
+       Reference AtomGroup can be more than one atom.
     """
-    if len(ref_ag.atoms) > 1:
-        raise ValueError('too many reference atoms passed')
+    results = capped_distance(ref_ag.atoms.positions,
+                              config_ag.atoms.positions,
+                              max_cutoff=cutoff,
+                              box=universe.dimensions,
+                              return_distances=return_distances)
 
-    pairs, distances = capped_distance(ref_ag.atoms.positions,
-                                       config_ag.atoms.positions,
-                                       max_cutoff=cutoff,
-                                       box=universe.dimensions,
-                                       return_distances=True)
-
-    return pairs, distances
+    return results
 
 
 def _get_host_anchors(atomgroup, l_atom, anchor_selection, num_atoms=3,
@@ -165,6 +172,89 @@ def _get_bonded_host_atoms(atomgroup, anchor_ix,
         raise RuntimeError(errmsg) from None
 
 
+class FindBindingSite(AnalysisBase):
+    """Class to get binding site residues based on the ligand contacts during
+    the length of the trajectory
+
+    Parameters
+    ----------
+    ligand : MDAnaysis.AtomGroup
+        Ligand atoms to search for contacts around
+    host : MDAnalysis.AtomGroup
+        Host atoms (i.e. protein) to search for potential contact residues.
+    contact_cutoff : float [5.0]
+        Maximum distance in Angstroms to search for contacts.
+    contact_precentage : float [20.0]
+        Minimum percentage of frames within contact distance to be considered
+        as a potential binding site residue.
+    residue_selection : string ['backbone']
+        Selection string for which atoms to add to the binding site atom group
+        from each contact residue.
+
+    Attributes
+    ----------
+    binding_site : MDAnalysis.AtomGroup
+        Binding site atoms as identified from contacts, and sub-selected by the
+        `residue_selection` paramter.
+    contact_resindices : numpy array
+        One dimensional array of the residues found to be in contact of the
+        ligand more than contact_percentage of the time.
+
+    Raises
+    ------
+    UserWarning
+        * If fewer than 3 binding site residues have been found.
+    """
+    def __init__(self, ligand, host, contact_cutoff: float = 5.0,
+                 contact_precentage: float = 20.0,
+                 residue_selection: str = "backbone", **kwargs):
+        super(FindBindingSite, self).__init__(ligand.universe.trajectory,
+                                              **kwargs)
+        self.ligand = ligand
+        self.host = host
+        self.contact_cutoff = contact_cutoff
+        self.contact_percentage = contact_precentage
+        self.residue_selection = residue_selection
+
+    def _prepare(self):
+        # accumulator dictionary of length universe residues
+        self._host_contacts = {index: 0 for index in
+                               self.host.residues.resindices}
+
+    def _single_frame(self):
+        pairs = _search_from_capped(self.ligand, self.host,
+                                    self.ligand.universe, self.contact_cutoff,
+                                    return_distance=False)
+
+        # Get unique atoms in host
+        host_atoms = np.unique(pairs[:, 1])
+        resixs = self.host.atoms[host_atoms].residues.resindices
+
+        # feed the accumulator
+        for entry in resixs:
+            self._host_contacts[entry] += 1
+
+    def _conclude(self):
+        cutoff_val = (self.n_frames / 100) * self.contact_percentage
+
+        # list of resids with > contact_percentage contacts
+        self.contact_resindices = []
+
+        # loop over the residues in the host
+        for entry in self._host_contacts:
+            if self._host_contacts[entry] >= cutoff_val:
+                self.contact_resindices.append(entry)
+
+        # Warn if fewer than 3 residues found
+        if len(self.contact_resindices) < 3:
+            wmsg = "Fewer than 3 residues identified in binding site"
+            warnings.warn(wmsg)
+
+        self.contact_resindices = np.asarray(self.contact_resindices)
+        self.binding_site = self.host.residues[
+            self.contact_resindices].atoms.select_atoms(self.residue_selection)
+
+
 class FindHostAtoms(AnalysisBase):
     """Class to get a list of restraint host atoms using a distance search
     around the ligand bonding atoms.
@@ -209,6 +299,8 @@ class FindHostAtoms(AnalysisBase):
         self.l_atom = l_atom
         self.p_selection = p_selection
         self.ligand_ag = atomgroup.select_atoms(f'index {l_atom}')
+        if len(self.ligand_ag) > 1:
+            raise ValueError('Too many ligand atoms passed.')
         self.protein_ag = atomgroup.select_atoms(p_selection)
         self.num_restraints = num_restraints
         self.protein_routine = protein_routine
@@ -369,7 +461,7 @@ def _get_ligand_atoms_rmsf(atomgroup, l_selection, num_restraints, p_align):
     # if alignment selection is empty then raise error and let users know
     if len(copy_u.select_atoms(p_align)) == 0:
         errmsg = (f"no atoms matching '{p_align}' found for alignment ",
-                  f"please review the selection given to p_align")
+                  "please review the selection given to p_align")
         raise RuntimeError(errmsg)
 
     # Align to initial frame first
