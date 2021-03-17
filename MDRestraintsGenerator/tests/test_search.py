@@ -175,6 +175,17 @@ def test_findbindingsite_singleframe():
     assert len(bsite.contact_resindices) == 18
 
 
+def test_findbindingsite_userwarn():
+    u = mda.Universe(T4_OGRO)
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host, contact_cutoff=2.15)
+
+    with pytest.warns(UserWarning, match="Fewer than 3"):
+        bsite.run()
+
+
 @pytest.mark.parametrize('perc, atoms, residues', [
     [1, 108, 27], [20, 72, 18]
 ])
