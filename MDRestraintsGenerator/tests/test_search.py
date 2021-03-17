@@ -101,6 +101,13 @@ def test_findhostatoms_names(u):
         assert u.atoms[atoms[2]].name == "N"
 
 
+def test_findhostatoms_manyatoms_err(u):
+    l_atom = "2611 2612"
+    errmsg = "Too many ligand atoms passed."
+    with pytest.raises(ValueError, match=errmsg):
+        search.FindHostAtoms(u, l_atom)
+
+
 @pytest.mark.parametrize('ix1, ix2, ix3', [
     [2560, 2577, 2579], [2581, 2579, 2577]
 ])
@@ -156,11 +163,3 @@ def test_find_atoms_empty_align_selection(u):
     errmsg = "no atoms matchin"
     with pytest.raises(RuntimeError, match=errmsg):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
-
-
-def test_search_from_capped_err(u):
-    lig = u.select_atoms('resname LIG')
-    prot = u.atoms
-    errmsg = "too many reference atoms passed"
-    with pytest.raises(ValueError, match=errmsg):
-        search._search_from_capped(lig, prot, lig.universe, 1.0)
