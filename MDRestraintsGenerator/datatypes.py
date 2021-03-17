@@ -315,7 +315,7 @@ class COMDistance(VectorData):
         """Store the current timestep's COM distance between the two
         AtomGroups"""
         self.values[index] = np.linalg.norm(
-            self.ags[0].center_of_mass() - self.ags[0].center_of_mass()
+            self.ags[0].center_of_mass() - self.ags[1].center_of_mass()
         )
 
 

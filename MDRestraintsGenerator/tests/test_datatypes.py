@@ -6,6 +6,7 @@ import MDAnalysis as mda
 import MDRestraintsGenerator.datatypes as dtypes
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 import pytest
+import numpy as np
 import os
 from pathlib import Path
 from numpy.testing import assert_almost_equal
@@ -29,6 +30,36 @@ def test_vector_store():
 
     with pytest.raises(NotImplementedError, match=errmsg):
         vector.store(0)
+
+
+@pytest.mark.parametrize('class_name', ['COGDistance', 'COMDistance'])
+def test_cog_com_distance_oneframe_basic(u_gro, class_name):
+    ag1 = u_gro.select_atoms('index 0')
+    ag2 = u_gro.select_atoms('index 1')
+    distance_class = getattr(dtypes, class_name)
+    cog_or_com = distance_class(ag1, ag2, n_frames=1)
+    cog_or_com.store(0)
+
+    assert_almost_equal(cog_or_com.values, np.array([1.0082664]))
+
+
+@pytest.mark.parametrize('class_name', ['COGDistance', 'COMDistance'])
+def test_cog_com_distance_multiframe_basic(u, class_name):
+    ag1 = u.select_atoms('index 0')
+    ag2 = u.select_atoms('index 100')
+    distance_class = getattr(dtypes, class_name)
+    obj = distance_class(ag1, ag2, n_frames=u.trajectory.n_frames)
+
+    for i, ts in enumerate(u.trajectory):
+        obj.store(i)
+
+    diff_array = np.array([
+        10.873642, 11.237176, 11.031385, 10.970623, 11.89015, 10.771446,
+        10.005971, 9.920996, 11.99379, 10.9161215, 11.037367, 9.546233,
+        11.420322, 5.6185527, 10.2656975, 9.249049, 10.485258, 8.989676,
+        11.3187685, 12.229224, 11.093904], dtype=np.float32)
+
+    assert_almost_equal(obj.values, diff_array, decimal=5)
 
 
 @pytest.mark.parametrize('frames', [None, 10])
