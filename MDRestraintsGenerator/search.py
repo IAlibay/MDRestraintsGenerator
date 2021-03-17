@@ -186,7 +186,8 @@ class FindBindingSite(AnalysisBase):
         Maximum distance in Angstroms to search for contacts.
     contact_precentage : float [20.0]
         Minimum percentage of frames within contact distance to be considered
-        as a potential binding site residue.
+        as a potential binding site residue. Note, a contact percentage of 0%
+        will return all residues in the host.
     residue_selection : string ['backbone']
         Selection string for which atoms to add to the binding site atom group
         from each contact residue.
@@ -224,7 +225,7 @@ class FindBindingSite(AnalysisBase):
     def _single_frame(self):
         pairs = _search_from_capped(self.ligand, self.host,
                                     self.ligand.universe, self.contact_cutoff,
-                                    return_distance=False)
+                                    return_distances=False)
 
         # Get unique atoms in host
         host_atoms = np.unique(pairs[:, 1])
