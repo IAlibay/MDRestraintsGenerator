@@ -435,7 +435,7 @@ class FlatBottomRestraint:
             except AttributeError:
                 raise RuntimeError("no frame defined for writing")
 
-        if not hasattr(self.wall_distance):
+        if not hasattr(self, "wall_distance"):
             errmsg = ("The `wall_distance` attribute is not set. Please run "
                       "the `analyze` method before calling `write`.")
             raise RuntimeError(errmsg)
@@ -456,7 +456,8 @@ class FlatBottomRestraint:
         """Writes out a flat bottom restraint for the GMX pull code"""
         # seek chosen frame
         self.atomgroups[0].universe.trajectory[index]
-        self.atomgroups[0].write(f'{path}/ClosestRestraintFrame.gro')
+        self.atomgroups[0].universe.atoms.write(
+            f'{path}/ClosestRestraintFrame.gro')
 
         # write out the index files
         ndx_file = f'{path}/flatbottom_index.ndx'
