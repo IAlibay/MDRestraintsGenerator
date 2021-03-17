@@ -201,25 +201,22 @@ def _write_pull_header(rfile, pull=True, pull_print_com=False,
     .. versionadded:: 0.2.0
     """
 
-    def yes_no(option):
-        return 'yes' if option else 'no'
-
     # header
-    rfile.write(';----------------------------------------------------')
-    rfile.write('; PULL RESTRAINT OPTIONS')
-    rfile.write(';----------------------------------------------------')
+    rfile.write(';----------------------------------------------------\n')
+    rfile.write('; PULL RESTRAINT OPTIONS\n')
+    rfile.write(';----------------------------------------------------\n')
 
     # go through the options
-    rfile.write(f"pull = {yes_no(pull)}")
-    rfile.write(f"pull-print-com = {yes_no(pull_print_com)}")
-    rfile.write(f"pull-print-ref-value = {yes_no(pull_print_ref_value)}")
-    rfile.write(f"pull-print-components = {yes_no(pull_print_components)}")
-    rfile.write(f"pull-nstxout = {pull_nstxout}")
-    rfile.write(f"pull-nstfout = {pull_nstfout}")
+    rfile.write(f"pull = {yes_no(pull)}\n")
+    rfile.write(f"pull-print-com = {yes_no(pull_print_com)}\n")
+    rfile.write(f"pull-print-ref-value = {yes_no(pull_print_ref_value)}\n")
+    rfile.write(f"pull-print-components = {yes_no(pull_print_components)}\n")
+    rfile.write(f"pull-nstxout = {pull_nstxout}\n")
+    rfile.write(f"pull-nstfout = {pull_nstfout}\n")
     rfile.write(
-        f"pull-pbc-ref-prev-step-com = {yes_no(pull_pbc_ref_prev_step_com)}")
-    rfile.write(f"pull-xout-average = {yes_no(pull_xout_average)}")
-    rfile.write(f"pull-fout-average = {yes_no(pull_fout_average)}")
+        f"pull-pbc-ref-prev-step-com = {yes_no(pull_pbc_ref_prev_step_com)}\n")
+    rfile.write(f"pull-xout-average = {yes_no(pull_xout_average)}\n")
+    rfile.write(f"pull-fout-average = {yes_no(pull_fout_average)}\n")
 
 
 def _write_pull_groups(rfile, group_names, group_pbc_atoms):
@@ -249,18 +246,19 @@ def _write_pull_groups(rfile, group_names, group_pbc_atoms):
     """
 
     if len(group_names) != len(group_pbc_atoms):
-        raise ValueError
+        errmsg = 'group names has a different length than group pbc atoms'
+        raise ValueError(errmsg)
 
     # number of groups
-    rfile.write(f"pull-ngroups = {len(group_names)}")
+    rfile.write(f"pull-ngroups = {len(group_names)}\n")
 
     # loop through names, index is 1-indexed
-    for index, name in group_names:
-        rfile.write(f"pull-group{index+1}-name = {name}")
+    for index, name in enumerate(group_names):
+        rfile.write(f"pull-group{index+1}-name = {name}\n")
 
     # loop through pbc atoms, index and atom is 1-indexed
-    for index, atom in group_pbc_atoms:
-        rfile.write(f"pull-group{index+1}-pbcatom = {atom+1}")
+    for index, atom in enumerate(group_pbc_atoms):
+        rfile.write(f"pull-group{index+1}-pbcatom = {atom+1}\n")
 
 
 def _write_pull_coords(rfile,
@@ -304,7 +302,7 @@ def _write_pull_coords(rfile,
         List of floats containing the force constants of each pull coordinate.
         Units in kJ mol^-1 nm^-2, kJ mol^-1 nm^-1, kJ mol^-1 rad^-2, or
         kJ mol^-1 rad^-1. Formatted to %.3f.
-    pull_coords_kB : list of floats
+    pull_coords_kBs : list of floats
         List of floats as pull_coords_ks, but for state B when doing a free
         energy perturbation. Formatted to %.3f.
     pull_coord_potential_providers : list of strings [`None`]
@@ -325,32 +323,34 @@ def _write_pull_coords(rfile,
     """
 
     # number of coords
-    rfile.write(f"pull-ncoords = {len(pull_coord_types)}")
+    rfile.write(f"pull-ncoords = {len(pull_coord_types)}\n")
 
-    for i in range(pull_coord_types):
+    for i in range(len(pull_coord_types)):
         index = i + 1  # index is 1 formatted
-        rfile.write(f"pull-coord{index}-type = {pull_coord_types[i]}")
-        rfile.write(f"pull-coord{index}-geometry = {pull_coord_geometries[i]}")
+        rfile.write(f"pull-coord{index}-type = {pull_coord_types[i]}\n")
+        rfile.write(
+            f"pull-coord{index}-geometry = {pull_coord_geometries[i]}\n")
         groups_string = ' '.join(map(str, pull_coord_groups[i]))
         rfile.write(
-            f"pull-coord{index}-groups = {groups_string}")
-        rfile.write(f"pull-coord{index}=dim = {pull_coord_dims[i]}")
+            f"pull-coord{index}-groups = {groups_string}\n")
+        rfile.write(f"pull-coord{index}-dim = {pull_coord_dims[i]}\n")
         rfile.write(
-            f"pull-coord{index}-start = {yes_no(pull_coord_starts[i])}")
-        rfile.write(f"pull-coord{index}-rate = {pull_coord_rates[i]}")
-        rfile.write(f"pull-coord{index}-k = {pull_coord_ks[i]}")
-        rfile.write(f"pull-coord{index}-kB = {pull_coord_kBs[i]}")
+            f"pull-coord{index}-start = {yes_no(pull_coord_starts[i])}\n")
+        rfile.write(f"pull-coord{index}-init = {pull_coord_inits[i]:.3f}\n")
+        rfile.write(f"pull-coord{index}-rate = {pull_coord_rates[i]:.3f}\n")
+        rfile.write(f"pull-coord{index}-k = {pull_coord_ks[i]:.3f}\n")
+        rfile.write(f"pull-coord{index}-kB = {pull_coord_kBs[i]:.3f}\n")
 
         # optional entries
         if pull_coord_potential_providers is not None:
             entry = (f"pull-coord{index}-potential-provider = "
-                     f"{pull_coord_potential_providers[i]}")
+                     f"{pull_coord_potential_providers[i]}\n")
             rfile.write(entry)
 
         if pull_coord_origins is not None:
-            entry = (f"pull-coord{index}-origin = {pull_coord_origins[i]}")
+            entry = (f"pull-coord{index}-origin = {pull_coord_origins[i]}\n")
             rfile.write(entry)
 
         if pull_coord_vecs is not None:
-            entry = (f"pull-coord{index}-vec = {pull_coord_vecs[i]}")
+            entry = (f"pull-coord{index}-vec = {pull_coord_vecs[i]}\n")
             rfile.write(entry)
