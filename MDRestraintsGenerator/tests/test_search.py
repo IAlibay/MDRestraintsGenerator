@@ -5,7 +5,7 @@ Unit and regression test for the MDRestraintsGenerator package.
 # Import package, test suite, and other packages as needed
 import MDAnalysis as mda
 from MDRestraintsGenerator import search
-from .datafiles import T4_TPR, T4_XTC
+from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 from numpy.testing import assert_almost_equal
 import pytest
 import sys
@@ -144,8 +144,6 @@ def test_bonded_errors(u, errmsg, exclusion_str):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
 
-@pytest.mark.skipif((os.environ.get('TRAVIS_TEST') and sys.platform == 'linux'),
-                            reason='known segfaults')
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 
@@ -163,3 +161,29 @@ def test_find_atoms_empty_align_selection(u):
     errmsg = "no atoms matchin"
     with pytest.raises(RuntimeError, match=errmsg):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
+
+
+def test_findbindingsite_singleframe():
+    u = mda.Universe(T4_OGRO)
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host)
+    bsite.run()
+
+    assert len(bsite.binding_site) == 72
+    assert len(bsite.contact_resindices) == 18
+
+
+@pytest.mark.parametrize('perc, atoms, residues', [
+    [1, 108, 27], [20, 72, 18]
+])
+def test_findbindingsite_multiframe_no_min_perc(u, perc, atoms, residues):
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host, contact_precentage=perc)
+    bsite.run()
+
+    assert len(bsite.binding_site) == atoms
+    assert len(bsite.contact_resindices) == residues
