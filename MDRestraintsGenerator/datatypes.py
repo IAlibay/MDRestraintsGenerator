@@ -10,6 +10,17 @@ Contents:
       - Bond(VectorData)
       - Angle(VectorData)
       - Dihedral(VectorData)
+      - COGDistance(VectorData)
+      - COMDistance(VectorData)
+    - FlatBottomRestraint: class to generate a Flat Bottom restraint.
+    - BoreschRestraint: class to generate a Boresch restraint.
+
+
+.. versionchanged:: 0.2.0
+   Added COG and COM distance classes to store and analyze distances between
+   groups of atoms.
+   Added the FlatBottomRestraint to store/analyze/create a flat bottom
+   restraint based on the COM distance interaction of two groups of atoms.
 
 """
 
@@ -17,6 +28,7 @@ import MDRestraintsGenerator.writers as writers
 from pathlib import Path
 
 import MDAnalysis as mda
+from MDAnalysis.selections import gromacs as mda_gmx
 import numpy as np
 from scipy import stats
 from scipy.stats import circmean, circvar, circstd
@@ -27,8 +39,8 @@ class VectorData:
     def __init__(self, n_frames):
         """Initliase the vector data object.
 
-        Input
-        -----
+        Parameters
+        ----------
         n_frames : int, the number of frames in trajectory
         """
         self.values = np.zeros(n_frames)
@@ -83,17 +95,16 @@ class VectorData:
             return prob_data
 
         def get_hist_binrange(atype, in_values):
-            if atype == "bond":
-                bin_width = 0.2
-                return np.arange(in_values.min(), in_values.max() + bin_width,
-                                 bin_width)
             if atype == "angle":
                 bin_width = 2.0
                 return np.arange(0, 180 + bin_width, bin_width)
-
-            if atype == "dihedral":
+            elif atype == "dihedral":
                 bin_width = 4
                 return np.arange(-180, 180 + bin_width, bin_width)
+            else:
+                bin_width = 0.2
+                return np.arange(in_values.min(), in_values.max() + bin_width,
+                                 bin_width)
 
         try:
             self.mean
@@ -144,8 +155,8 @@ class Bond(VectorData):
     def __init__(self, ix1, ix2, atomgroup, n_frames, suffix_index=1):
         """Initialise the Bond object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in bond
         ix2 : int
@@ -158,7 +169,7 @@ class Bond(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set values from VectorData
-        super(Bond, self).__init__(n_frames)
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2], atomgroup.universe)
         self.atype = "bond"
@@ -175,8 +186,8 @@ class Angle(VectorData):
     def __init__(self, ix1, ix2, ix3, atomgroup, n_frames, suffix_index=1):
         """Initialise the Angle object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in angle
         ix2 : int
@@ -191,7 +202,7 @@ class Angle(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set value from VectorData
-        super(Angle, self).__init__(n_frames)
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3], atomgroup.universe)
         self.atype = "angle"
@@ -210,8 +221,8 @@ class Dihedral(VectorData):
                  suffix_index=1):
         """Initialise the Dihedral object.
 
-        Input
-        -----
+        Parameters
+        ----------
         ix1 : int
             index of the first atom involved in dihedral
         ix2 : int
@@ -227,8 +238,8 @@ class Dihedral(VectorData):
         suffix_index : int
             number to add as a filename index when plotting [1]
         """
-        # Set value from VectorData
-        super(Dihedral, self).__init__(n_frames)
+        # Set values from VectorData
+        super().__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4],
                                        atomgroup.universe)
@@ -241,6 +252,336 @@ class Dihedral(VectorData):
         """Store the current timestep's dihedral value
         """
         self.values[index] = self.atomgroup.dihedral.value()
+
+
+class COGDistance(VectorData):
+    """Class for storing Center Of Geometry (COG) distances between
+    AtomGroups"""
+    def __init__(self, atomgroup1, atomgroup2, n_frames, suffix_index=1):
+        """Initialise the COG distance object.
+
+        Parameters
+        ----------
+        atomgroup1 : MDAnalysis.AtomGroup
+            `AtomGroup` of the first set of atoms to get a COG for.
+        atomgroup2 : MDAnalysis.AtomGroup
+            `AtomGroup` of the second set of atoms to get a COG for.
+        n_frames : int
+            number of frames for which the distance will be recorded.
+        suffix_index : int
+            number to add as a filename index when plotting [1]
+        """
+        # Initialise values
+        super().__init__(n_frames)
+        self.ags = [atomgroup1, atomgroup2]
+        self.atype = "COG-distance"
+        self.periodic = False
+        self.units = "Å"
+        self.filename = f"{self.atype}_{suffix_index}"
+
+    def store(self, index):
+        """Store the current timestep's COG distance between the two
+        AtomGroups"""
+        self.values[index] = np.linalg.norm(
+            self.ags[0].center_of_geometry() - self.ags[1].center_of_geometry()
+        )
+
+
+class COMDistance(VectorData):
+    """Class for storing Center of Mass (COM) distances between AtomGroups"""
+    def __init__(self, atomgroup1, atomgroup2, n_frames, suffix_index=1):
+        """Initialise the COM distance object.
+
+        Parameters
+        ----------
+        atomgroup1 : MDAnalysis.AtomGroup
+            `AtomGroup` of the first set of atoms to get a COM for.
+        atomgroup2 : MDAnalysis.AtomGroup
+            `AtomGroup` of the second set of atoms to get a COM for.
+        n_frames : int
+            number of frames for which the distance will be recorded.
+        suffix_index : int
+            number to add as a filename index when plotting [1]
+        """
+        # Initialise values
+        super().__init__(n_frames)
+        self.ags = [atomgroup1, atomgroup2]
+        self.atype = "COM-distance"
+        self.periodic = False
+        self.units = "Å"
+        self.filename = f"{self.atype}_{suffix_index}"
+
+    def store(self, index):
+        """Store the current timestep's COM distance between the two
+        AtomGroups"""
+        self.values[index] = np.linalg.norm(
+            self.ags[0].center_of_mass() - self.ags[1].center_of_mass()
+        )
+
+
+class FlatBottomRestraint:
+    """A class to store and analyze the COM distances required for a
+    two group COM flat bottom restraint"""
+    def __init__(self, atomgroup1, atomgroup2, group1_name="ligand",
+                 group2_name="binding_site", n_frames=None):
+        """Init routine for the FlatBottomRestraint class.
+
+        Parameters
+        ----------
+        atomgroup1: MDAnalysis.AtomGroup
+            AtomGroup of the first set of atoms involved in the COM distance
+        atomgroup2: MDAnalysis.AtomGroup
+            AtomGroup of the second set of atoms involved in the COM distance
+        group1_name: str ['ligand']
+            Name to identify the atoms involved in `atomgroup1`
+        group2_name: str ['binding_site']
+            Name to identify the atoms involved in `atomgroup2`
+        n_frames : int [`None`]
+            Number of frames to analyze. Defaults of `None` assumes all frames
+            in the trajectory of `atomgroup1`.
+
+        Notes
+        -----
+        The flat bottom restraint wall distance is set to the maximum COM
+        distance seen during the trajectory + 2 * standard deviation of
+        observed standard deivations.
+
+        Should you wish to set this to a custom value, you can overwrite the
+        `wall_distance` attribute after having called the `analyze()` method.
+        """
+        self.atomgroups = [atomgroup1, atomgroup2]
+        self.atomgroup_names = [group1_name, group2_name]
+
+        # Either default to all the frames in the first atomgroup (if `None`)
+        # or whatever defined value was passed
+        if n_frames is None:
+            self.n_frames = atomgroup1.universe.trajectory.n_frames
+        else:
+            self.n_frames = n_frames
+
+        # Create the COM object
+        # Note: we probably should add a check for mass
+        self.com = COMDistance(self.atomgroups[0], self.atomgroups[1],
+                               self.n_frames)
+
+    def store_frame(self, index):
+        """Function to store data for COM object
+
+        Paramters
+        ---------
+        index : current frame number
+        """
+        self.com.store(index)
+
+    def analyze(self):
+        """Function to analyze the COM object data"""
+        self.com.analyze()
+        self.abs_deviation = np.absolute(self.com.mean - self.com.values)
+        self.min_frame = self.abs_deviation.argmin()
+        self.min_abs_deviation = np.min(self.abs_deviation)
+        # Set the wall distance at max_distance + 2 * StandardDeviation
+        self.wall_distance = np.max(self.com.values) + (2 * self.com.stdev)
+
+    def plot(self, frame=None, path=None):
+        """Plots all the analyzed data
+
+        Input
+        -----
+        frame : int
+            index of chosen frame to plot.
+        path : str
+            path to location where files should be written.
+        """
+        # TODO: move this to a restraint class or a some kind of method...
+        if frame is None:
+            try:
+                frame = self.min_frame
+            except AttributeError:
+                pass
+
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = './'
+
+        self.com.plot(picked_frame=frame, path=dirpath)
+
+    def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX",
+              debug=False):
+        """Writes out the FlatBottom restraint.
+
+        Input
+        -----
+        frame : int
+            index of frame to write out, will default to frame closes to mean.
+        path : str
+            path to location where files should be written.
+        force_constant : float
+            strength of the Boresch restraint [10.0 kcal mol^-1 A^-2]
+        outtype : str
+            type of restraint to write, for now only "GMX" is accepted.
+        debug : bool
+            option to turn on extra printing options to examine COM distances
+
+        TODO
+        ----
+        * pmemd.cuda support COM distance restraints - this should be easy
+          enough to implement.
+        """
+        if frame is None:
+            try:
+                frame = self.min_frame
+            except AttributeError:
+                raise RuntimeError("no frame defined for writing")
+
+        if not hasattr(self, "wall_distance"):
+            errmsg = ("The `wall_distance` attribute is not set. Please run "
+                      "the `analyze` method before calling `write`.")
+            raise RuntimeError(errmsg)
+
+        if outtype != "GMX":
+            raise RuntimeError(f"{outtype} not implemented yet")
+
+        if path is not None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            dirpath = path
+        else:
+            dirpath = '.'
+
+        self._write_gmx(index=frame, path=dirpath,
+                        force_constant=force_constant, debug=debug)
+
+    def _write_gmx(self, index, path, force_constant, debug):
+        """Writes out a flat bottom restraint for the GMX pull code"""
+        # seek chosen frame
+        self.atomgroups[0].universe.trajectory[index]
+        self.atomgroups[0].universe.atoms.write(
+            f'{path}/ClosestRestraintFrame.gro')
+
+        # write out the index files
+        ndx_file = f'{path}/flatbottom_index.ndx'
+        with mda_gmx.SelectionWriter(ndx_file, mode='w') as ndx:
+            # The entire system
+            ndx.write(self.atomgroups[0].universe.atoms, name='System')
+            ndx.write(self.atomgroups[0], name=self.atomgroup_names[0])
+            ndx.write(self.atomgroups[1], name=self.atomgroup_names[1])
+
+        # Get the atoms nearest to the COM of each atomgroup
+        com_atoms = []
+        for ag in self.atomgroups:
+            com_atoms.append(self._get_nearest_com_atom(ag))
+
+        # do MDP writing here
+        with open(f'{path}/flatbottom.mdp', 'w') as rfile:
+            # write the header
+            if debug:
+                writers._write_pull_header(rfile, pull=True,
+                                           pull_print_com=True,
+                                           pull_nstxout=100,
+                                           pull_pbc_ref_prev_step_com=True)
+            else:
+                writers._write_pull_header(rfile, pull=True,
+                                           pull_pbc_ref_prev_step_com=True)
+
+            # write the pull group settings
+            writers._write_pull_groups(rfile, group_names=self.atomgroup_names,
+                                       group_pbc_atoms=com_atoms)
+
+            # write the pull coordinate settings
+            coord_types = ['flat-bottom', ]
+            coord_geoms = ['distance', ]
+            coord_groups = [(1, 2), ]
+            coord_dims = ['Y Y Y', ]
+            coord_starts = [False, ]
+            coord_inits = [self.wall_distance / 10, ]
+            coord_rates = [0, ]
+            coord_ks = [0, ]
+            coord_kBs = [force_constant * 4.184 * 100, ]
+            writers._write_pull_coords(rfile,
+                                       pull_coord_types=coord_types,
+                                       pull_coord_geometries=coord_geoms,
+                                       pull_coord_groups=coord_groups,
+                                       pull_coord_dims=coord_dims,
+                                       pull_coord_starts=coord_starts,
+                                       pull_coord_inits=coord_inits,
+                                       pull_coord_rates=coord_rates,
+                                       pull_coord_ks=coord_ks,
+                                       pull_coord_kBs=coord_kBs)
+
+    @staticmethod
+    def _get_nearest_com_atom(atomgroup):
+        """Helper function to find the atom in an atomgroup which is closest
+        to its center of mass
+
+        Paramters
+        ---------
+        atomgroup : MDAnalysis.AtomGroup
+            AtomGroup of the set of atoms to analyze.
+
+        Returns
+        -------
+        atom_ix : int
+            0 based index of the atom nearest to the center of mass.
+        """
+        com = atomgroup.center_of_mass()
+        distances = np.zeros(len(atomgroup.atoms))
+
+        for i, atom in enumerate(atomgroup.atoms):
+            distances[i] = np.linalg.norm(com - atom.position)
+
+        atom_ix = int(atomgroup.atoms[np.argmin(distances)].index)
+
+        return atom_ix
+
+    def standard_state(self, wall_distance=None, temperature=298.15,
+                       calc_type="analytical"):
+        """Reports the standard state volume correction for the flat bottom
+        restraint.
+
+        Input
+        -----
+        wall_distance : float
+            Distance where the flat bottom restraint is enabled. If `None`,
+            defaults to the value of `self.wall_distance`. [`None`]
+        temperature : float
+            System temperature in Kelvins [298.15]
+        calc_type : str
+            Method by which to obtain the standard state correction, currently
+            only analytical corrections are supported. ["analytical"]
+        """
+        if wall_distance is None:
+            try:
+                wall_distance = self.wall_distance
+            except AttributeError:
+                raise AttributeError("`wall_distance` was not defined, if "
+                                     "using the one generated based on the "
+                                     "input simulation, please call the "
+                                     "`analyze` method first.")
+
+        if calc_type != "analytical":
+            raise NotImplementedError(f"{calc_type} is not implemented.")
+        else:
+            return self._analytical_energy(wall_distance, temperature)
+
+    @staticmethod
+    def _analytical_energy(wall_distance, temperature):
+        """Get the dG standard volume correction for a flat bottom restraint.
+
+        Parameters
+        ----------
+        wall_distance : float
+            COM distance at which the flot bottom restraint is active.
+        temperature : float
+            System temperature in Kelvin.
+        """
+        Gas_K = (8.314472*0.001) / 4.184  # Gas constant kcal/mol/K
+        StandardV = 1660.539  # standard volume in A^3
+
+        volume = 4/3 * np.pi * (wall_distance**3)
+        dG = Gas_K * temperature * np.log(volume/StandardV)
+
+        return dG
 
 
 class BoreschRestraint:
@@ -423,10 +764,10 @@ class BoreschRestraint:
         # Final check for co-linearity
         for angle in self.angles:
             if (angle.values[frame] < 25) or (angle.values[frame] > 155):
-                errmsg = (f"picked frame contains angle near colinearity ",
+                errmsg = ("picked frame contains angle near colinearity ",
                           f"value: {angle.values[frame]}\n",
-                          f"This is a bad idea, choose another set of ",
-                          f"restraint atoms.")
+                          "This is a bad idea, choose another set of ",
+                          "restraint atoms.")
                 raise RuntimeError(errmsg)
 
         if path is not None:
@@ -439,29 +780,31 @@ class BoreschRestraint:
                         force_constant=force_constant)
 
     def _write_gmx(self, index, path, force_constant):
-        # seek corre
+        # seek chosen frame
         self.atomgroup.universe.trajectory[index]
         self.atomgroup.write(f'{path}/ClosestRestraintFrame.gro')
 
         # write out top file
         with open(f'{path}/BoreschRestraint.top', 'w') as rfile:
-            rfile.write('\n')
-            rfile.write('; restraints\n')
-            rfile.write('[ intermolecular_interactions ]\n')
+            # header
+            writers._write_intinters_header(rfile)
 
             # bond
-            writers._write_bond_header(rfile)
-            writers._write_bond(self.bond, index, force_constant, rfile)
+            writers._write_intinters_bond_header(rfile)
+            writers._write_intinters_bond(self.bond, index, force_constant,
+                                          rfile)
 
             # angle
-            writers._write_angle_header(rfile)
+            writers._write_intinters_angle_header(rfile)
             for angle in self.angles:
-                writers._write_angle(angle, index, force_constant, rfile)
+                writers._write_intinters_angle(angle, index, force_constant,
+                                               rfile)
 
             # dihedral
-            writers._write_dihedral_header(rfile)
+            writers._write_intinters_dihedral_header(rfile)
             for dihedral in self.dihedrals:
-                writers._write_dihedral(dihedral, index, force_constant, rfile)
+                writers._write_intinters_dihedral(dihedral, index,
+                                                  force_constant, rfile)
 
     def standard_state(self, frame=None, force_constant=10.0,
                        temperature=298.15, calc_type="analytical"):
@@ -471,7 +814,8 @@ class BoreschRestraint:
         Input
         -----
         frame : int
-            index of frame to write out, will default to frame closest to mean.
+            index of frame to get a standard state correction for, will default
+            to frame closest to mean (i.e. the one likely to be written out).
         force_constant : float
             strength of the Boresch restraint [10.0 kcal/mol]
         temperature : float
@@ -495,6 +839,15 @@ class BoreschRestraint:
     def _analytical_energy(self, frame, force_constant, temperature):
         """Get the dG_off standard state correction via the Boresch
         analytical method.
+
+        Parameters
+        ----------
+        frame : int
+            index of frame to get the standard state correction for.
+        force_constant : float
+            strength of the Borech restraint [kcal/mol]
+        temperature : float
+            system temperature in Kelvins.
 
         Acknowledgement
         ---------------

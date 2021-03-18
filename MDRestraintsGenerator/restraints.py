@@ -6,15 +6,85 @@ Contains main restraint object classes
 """
 
 from MDAnalysis.analysis.base import AnalysisBase
-from .datatypes import BoreschRestraint
+from .datatypes import BoreschRestraint, FlatBottomRestraint
+
+
+class FindFlatBottomRestraint(AnalysisBase):
+    """MDAnalysis.analysis.AnalysisBase derived class to generate a Flat Bottom
+    restraint from a simulation.
+
+    Attributes
+    ----------
+    restraint : :class:`datatypes.FlatBottomRestraint`
+        `FlatBottomRestraint` class instance, from which the following can be
+        obtained:
+          * A plot of the COM distance values via :meth:`plot`
+          * Restrained simulation input files via :meth:`write`
+          * Standard state correction via :meth:`standard_state`
+
+    """
+    def __init__(self, ligand, binding_site, ligand_name="ligand",
+                 binding_site_name="binding_site",
+                 force_constant=10.0, **kwargs):
+        """Init routine for the FindFlatBottomRestraint class.
+
+        Parameters
+        ----------
+        ligand : MDAnalysis.AtomGroup
+            AtomGroup defining the ligand atoms involved in the COM restraint.
+        binding_site : MDAnalysis.AtomGroup
+            AtomGroup defining the binding site atoms used for the COM
+            restraint.
+        ligand_name : str
+            Name used for the ligand definition in the GMX index file.
+            [`ligand`]
+        binding_site_name : str
+            Name used for the binding site in the GMX index file.
+            [`binding_site`]
+        force_constant : float
+            Force constant of the flat bottom restraint in kcal mol^-1 A^-2
+            [10.0]
+        """
+        super(FindFlatBottomRestraint, self).__init__(
+            ligand.universe.trajectory, **kwargs)
+        self.ligand_ag = ligand
+        self.binding_site_ag = binding_site
+        self.ligand_name = ligand_name
+        self.binding_site_name = binding_site_name
+        self.force_constant = force_constant
+
+    def _prepare(self):
+        """Sets up the FlatBottomRestraint object"""
+        self.restraint = FlatBottomRestraint(
+            atomgroup1=self.ligand_ag, atomgroup2=self.binding_site_ag,
+            group1_name=self.ligand_name, group2_name=self.binding_site_name,
+            n_frames=self.n_frames)
+
+    def _single_frame(self):
+        """Aggregates the necessary data for given frame"""
+        self.restraint.store_frame(self._frame_index)
+
+    def _conclude(self):
+        """Analyses and outputs the Flat Bottom restraint"""
+        self.restraint.analyze()
 
 
 class FindBoreschRestraint(AnalysisBase):
     """MDAnalysis.analysis.AnalysisBase derived class to generate a Boresch
-    restraint from a simulation"""
+    restraint from a simulation
+
+    Attributes
+    ----------
+    restraint : :class:`datatypes.BoreschRestraint`
+        `FlatBottomRestraint` class instance, from which the following can be
+        obtained:
+          * Plots of the Boresch restraint components via :meth:`plot`
+          * Restrained simulation input files via :meth:`write`
+          * Standard state correction via :meth:`standard_state`
+    """
     def __init__(self, atomgroup, atom_set,
                  force_constant=10.0, **kwargs):
-        """Init routine for the BoreschRestraint class.
+        """Init routine for the FindBoreschRestraint class.
 
         Parameters
         ----------

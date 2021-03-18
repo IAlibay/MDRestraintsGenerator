@@ -5,11 +5,8 @@ Unit and regression test for the MDRestraintsGenerator package.
 # Import package, test suite, and other packages as needed
 import MDAnalysis as mda
 from MDRestraintsGenerator import search
-from .datafiles import T4_TPR, T4_XTC
-from numpy.testing import assert_almost_equal
+from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 import pytest
-import sys
-import os
 
 
 @pytest.fixture(scope='module')
@@ -28,6 +25,17 @@ def test_no_host_anchors(u):
     with pytest.raises(RuntimeError, match=errmsg):
         search._get_host_anchors(u, l_atom, anchor_selection, num_atoms=1,
                                  init_cutoff=1, max_cutoff=3)
+
+
+def test_too_many_ligand_atoms_findhostatoms(u):
+    """Throws a ValueError if too many ligand atoms have been passed"""
+
+    errmsg = "Too many ligand atoms passed."
+
+    l_atom = "2611 2612"
+
+    with pytest.raises(ValueError, match=errmsg):
+        psearch = search.FindHostAtoms(u, l_atom)
 
 
 def test_no_host_anchors_findhostatoms(u):
@@ -90,6 +98,13 @@ def test_findhostatoms_names(u):
         assert u.atoms[atoms[2]].name == "N"
 
 
+def test_findhostatoms_manyatoms_err(u):
+    l_atom = "2611 2612"
+    errmsg = "Too many ligand atoms passed."
+    with pytest.raises(ValueError, match=errmsg):
+        search.FindHostAtoms(u, l_atom)
+
+
 @pytest.mark.parametrize('ix1, ix2, ix3', [
     [2560, 2577, 2579], [2581, 2579, 2577]
 ])
@@ -126,8 +141,6 @@ def test_bonded_errors(u, errmsg, exclusion_str):
         search._get_bonded_host_atoms(u, p_atom, exclusion_str)
 
 
-@pytest.mark.skipif((os.environ.get('TRAVIS_TEST') and sys.platform == 'linux'),
-                            reason='known segfaults')
 def test_find_atoms_regression(u):
     l_atoms = search.find_ligand_atoms(u)
 
@@ -147,9 +160,38 @@ def test_find_atoms_empty_align_selection(u):
         l_atoms = search.find_ligand_atoms(u, p_align="protein and name X")
 
 
-def test_search_from_capped_err(u):
-    lig = u.select_atoms('resname LIG')
-    prot = u.atoms
-    errmsg = "too many reference atoms passed"
-    with pytest.raises(ValueError, match=errmsg):
-        search._search_from_capped(lig, prot, u.dimensions, 1.0)
+def test_findbindingsite_singleframe():
+    u = mda.Universe(T4_OGRO)
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host)
+    bsite.run()
+
+    assert len(bsite.binding_site) == 72
+    assert len(bsite.contact_resindices) == 18
+
+
+def test_findbindingsite_userwarn():
+    u = mda.Universe(T4_OGRO)
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host, contact_cutoff=2.15)
+
+    with pytest.warns(UserWarning, match="Fewer than 3"):
+        bsite.run()
+
+
+@pytest.mark.parametrize('perc, atoms, residues', [
+    [1, 108, 27], [20, 72, 18]
+])
+def test_findbindingsite_multiframe_no_min_perc(u, perc, atoms, residues):
+    ligand = u.select_atoms('resname LIG')
+    host = u.select_atoms('protein')
+
+    bsite = search.FindBindingSite(ligand, host, contact_precentage=perc)
+    bsite.run()
+
+    assert len(bsite.binding_site) == atoms
+    assert len(bsite.contact_resindices) == residues
