@@ -477,11 +477,11 @@ class FlatBottomRestraint:
             # write the header
             if debug:
                 writers._write_pull_header(rfile, pull=True,
+                                           pull_print_com=True,
+                                           pull_nstxout=100,
                                            pull_pbc_ref_prev_step_com=True)
             else:
                 writers._write_pull_header(rfile, pull=True,
-                                           pull_print_com=True,
-                                           pull_nstxout=100,
                                            pull_pbc_ref_prev_step_com=True)
 
             # write the pull group settings
@@ -494,7 +494,7 @@ class FlatBottomRestraint:
             coord_groups = [(1, 2), ]
             coord_dims = ['Y Y Y', ]
             coord_starts = [False, ]
-            coord_inits = [self.wall_distance, ]
+            coord_inits = [self.wall_distance / 10, ]
             coord_rates = [0, ]
             coord_ks = [0, ]
             coord_kBs = [force_constant * 4.184 * 100, ]

@@ -80,7 +80,7 @@ def test_FlatBottomRestraint_frame(u, frames):
 @pytest.mark.parametrize('frame', [None, 10])
 def test_FlatBottom_plotting(tmpdir, u, frame):
     lig = u.select_atoms('resname LIG')
-    prot = u.select_atoms('protein')    
+    prot = u.select_atoms('protein')
 
     obj = dtypes.FlatBottomRestraint(lig, prot)
     obj.analyze()
@@ -92,7 +92,7 @@ def test_FlatBottom_plotting(tmpdir, u, frame):
 
 def test_FlatBottom_plotting_path(tmpdir, u):
     lig = u.select_atoms('resname LIG')
-    prot = u.select_atoms('protein')    
+    prot = u.select_atoms('protein')
 
     obj = dtypes.FlatBottomRestraint(lig, prot)
     obj.analyze()
@@ -104,7 +104,7 @@ def test_FlatBottom_plotting_path(tmpdir, u):
 
 def test_FlatBottom_plotting_notanalysed(tmpdir, u):
     lig = u.select_atoms('resname LIG')
-    prot = u.select_atoms('protein')    
+    prot = u.select_atoms('protein')
 
     obj = dtypes.FlatBottomRestraint(lig, prot)
 
@@ -250,7 +250,7 @@ def test_Boresch_plotting_path(tmpdir, u):
     with tmpdir.as_cwd():
         boresch.plot(frame=None, path='testdir')
         for name in ['./testdir/bond_1.png', './testdir/angle_1.png',
-                     './testdir/angle_2.png', './testdir/dihedral_1.png', 
+                     './testdir/angle_2.png', './testdir/dihedral_1.png',
                      './testdir/dihedral_2.png', './testdir/dihedral_3.png']:
             assert os.path.isfile(name)
 
