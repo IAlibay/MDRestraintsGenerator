@@ -201,14 +201,17 @@ def test_standard_state_no_walldistance_error(u_gro):
         obj.standard_state()
 
 
-def test_standard_state_not_implemented_error(u_gro):
+@pytest.mark.parametrize('class_name',
+                         ['FlatBottomRestraint', 'HarmonicRestraint'])
+def test_standard_state_not_implemented_error(u_gro, class_name):
     lig = u_gro.select_atoms('resname LIG')
     prot = u_gro.select_atoms('protein')
 
-    obj = dtypes.FlatBottomRestraint(lig, prot)
+    tested_class = getattr(dtypes, class_name)
+    obj = tested_class(lig, prot)
 
     with pytest.raises(NotImplementedError, match="not implemented"):
-        obj.standard_state(wall_distance=3.3, calc_type="numerical")
+        obj.standard_state(3.3, calc_type="numerical")
 
 
 @pytest.mark.parametrize('frames', [None, 10])
