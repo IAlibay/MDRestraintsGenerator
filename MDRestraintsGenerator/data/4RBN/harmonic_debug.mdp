@@ -1,0 +1,27 @@
+;----------------------------------------------------
+; PULL RESTRAINT OPTIONS
+;----------------------------------------------------
+pull = yes
+pull-print-com = yes
+pull-print-ref-value = no
+pull-print-components = no
+pull-nstxout = 100
+pull-nstfout = 0
+pull-pbc-ref-prev-step-com = yes
+pull-xout-average = no
+pull-fout-average = no
+pull-ngroups = 2
+pull-group1-name = ligand
+pull-group2-name = binding_site
+pull-group1-pbcatom = 2612
+pull-group2-pbcatom = 1564
+pull-ncoords = 1
+pull-coord1-type = umbrella
+pull-coord1-geometry = distance
+pull-coord1-groups = 1 2
+pull-coord1-dim = Y Y Y
+pull-coord1-start = no
+pull-coord1-init = 0.109
+pull-coord1-rate = 0.000
+pull-coord1-k = 0.000
+pull-coord1-kB = 4184.000

@@ -13,6 +13,8 @@ Contents:
       - COGDistance(VectorData)
       - COMDistance(VectorData)
     - FlatBottomRestraint: class to generate a Flat Bottom restraint.
+    - HarmonicRestraint: class to generate a COM harmonic restraint (derives
+          from the FlatBottomRestraint class)
     - BoreschRestraint: class to generate a Boresch restraint.
 
 
@@ -169,7 +171,7 @@ class Bond(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set values from VectorData
-        super().__init__(n_frames)
+        super(Bond, self).__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2], atomgroup.universe)
         self.atype = "bond"
@@ -202,7 +204,7 @@ class Angle(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set value from VectorData
-        super().__init__(n_frames)
+        super(Angle, self).__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3], atomgroup.universe)
         self.atype = "angle"
@@ -239,7 +241,7 @@ class Dihedral(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Set values from VectorData
-        super().__init__(n_frames)
+        super(Dihedral, self).__init__(n_frames)
         # We generate the atom group from the zero-based indices
         self.atomgroup = mda.AtomGroup([ix1, ix2, ix3, ix4],
                                        atomgroup.universe)
@@ -272,7 +274,7 @@ class COGDistance(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Initialise values
-        super().__init__(n_frames)
+        super(COGDistance, self).__init__(n_frames)
         self.ags = [atomgroup1, atomgroup2]
         self.atype = "COG-distance"
         self.periodic = False
@@ -304,7 +306,7 @@ class COMDistance(VectorData):
             number to add as a filename index when plotting [1]
         """
         # Initialise values
-        super().__init__(n_frames)
+        super(COMDistance, self).__init__(n_frames)
         self.ags = [atomgroup1, atomgroup2]
         self.atype = "COM-distance"
         self.periodic = False
@@ -319,12 +321,11 @@ class COMDistance(VectorData):
         )
 
 
-class FlatBottomRestraint:
-    """A class to store and analyze the COM distances required for a
-    two group COM flat bottom restraint"""
+class BaseCOMDistanceRestraint:
+    """Base class for COM distance-type restraints"""
     def __init__(self, atomgroup1, atomgroup2, group1_name="ligand",
                  group2_name="binding_site", n_frames=None):
-        """Init routine for the FlatBottomRestraint class.
+        """Init routine for the class.
 
         Parameters
         ----------
@@ -339,15 +340,6 @@ class FlatBottomRestraint:
         n_frames : int [`None`]
             Number of frames to analyze. Defaults of `None` assumes all frames
             in the trajectory of `atomgroup1`.
-
-        Notes
-        -----
-        The flat bottom restraint wall distance is set to the maximum COM
-        distance seen during the trajectory + 2 * standard deviation of
-        observed standard deivations.
-
-        Should you wish to set this to a custom value, you can overwrite the
-        `wall_distance` attribute after having called the `analyze()` method.
         """
         self.atomgroups = [atomgroup1, atomgroup2]
         self.atomgroup_names = [group1_name, group2_name]
@@ -373,14 +365,9 @@ class FlatBottomRestraint:
         """
         self.com.store(index)
 
-    def analyze(self):
-        """Function to analyze the COM object data"""
-        self.com.analyze()
-        self.abs_deviation = np.absolute(self.com.mean - self.com.values)
-        self.min_frame = self.abs_deviation.argmin()
-        self.min_abs_deviation = np.min(self.abs_deviation)
-        # Set the wall distance at max_distance + 2 * StandardDeviation
-        self.wall_distance = np.max(self.com.values) + (2 * self.com.stdev)
+    def analyze(sef):
+        """Only implement in child classes"""
+        raise NotImplementedError("Only implemented in child classes")
 
     def plot(self, frame=None, path=None):
         """Plots all the analyzed data
@@ -407,9 +394,8 @@ class FlatBottomRestraint:
 
         self.com.plot(picked_frame=frame, path=dirpath)
 
-    def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX",
-              debug=False):
-        """Writes out the FlatBottom restraint.
+    def write(self, frame=None, path=None, outtype=None):
+        """Writes out the COM restraint.
 
         Input
         -----
@@ -417,12 +403,8 @@ class FlatBottomRestraint:
             index of frame to write out, will default to frame closes to mean.
         path : str
             path to location where files should be written.
-        force_constant : float
-            strength of the Boresch restraint [10.0 kcal mol^-1 A^-2]
         outtype : str
-            type of restraint to write, for now only "GMX" is accepted.
-        debug : bool
-            option to turn on extra printing options to examine COM distances
+            type of restraint to write.
 
         TODO
         ----
@@ -435,19 +417,103 @@ class FlatBottomRestraint:
             except AttributeError:
                 raise RuntimeError("no frame defined for writing")
 
-        if not hasattr(self, "wall_distance"):
-            errmsg = ("The `wall_distance` attribute is not set. Please run "
-                      "the `analyze` method before calling `write`.")
-            raise RuntimeError(errmsg)
-
-        if outtype != "GMX":
-            raise RuntimeError(f"{outtype} not implemented yet")
+        # Check for required attributes
+        for attribute in self.required_attributes:
+            if not hasattr(self, attribute):
+                errmsg = (f"The `{attribute}` attribute is not set. Please "
+                          "run the `analyze` method before calling `write`.")
+                raise RuntimeError(errmsg)
 
         if path is not None:
             Path(path).mkdir(parents=True, exist_ok=True)
             dirpath = path
         else:
             dirpath = '.'
+
+        if outtype not in self.implemented_writers:
+            raise RuntimeError(f"{outtype} not implemented yet")
+
+        # call to writers is implemented in child classes
+        return frame, dirpath
+
+    @staticmethod
+    def _get_nearest_com_atom(atomgroup):
+        """Helper function to find the atom in an atomgroup which is closest
+        to its center of mass
+
+        Paramters
+        ---------
+        atomgroup : MDAnalysis.AtomGroup
+            AtomGroup of the set of atoms to analyze.
+
+        Returns
+        -------
+        atom_ix : int
+            0 based index of the atom nearest to the center of mass.
+        """
+        com = atomgroup.center_of_mass()
+        distances = np.zeros(len(atomgroup.atoms))
+
+        for i, atom in enumerate(atomgroup.atoms):
+            distances[i] = np.linalg.norm(com - atom.position)
+
+        atom_ix = int(atomgroup.atoms[np.argmin(distances)].index)
+
+        return atom_ix
+
+
+class FlatBottomRestraint(BaseCOMDistanceRestraint):
+    """A class to store and analyze the COM distances required for a
+    two group COM flat bottom restraint
+
+
+    Notes
+    -----
+    The flat bottom restraint wall distance is set to the maximum COM
+    distance seen during the trajectory + 2 * standard deviation of
+    observed standard deivations.
+
+    Should you wish to set this to a custom value, you can overwrite the
+    `wall_distance` attribute after having called the `analyze()` method.
+    """
+
+    def analyze(self):
+        """Function to analyze the COM object data"""
+        self.com.analyze()
+        self.abs_deviation = np.absolute(self.com.mean - self.com.values)
+        self.min_frame = self.abs_deviation.argmin()
+        self.min_abs_deviation = np.min(self.abs_deviation)
+        # Set the wall distance at max_distance + 2 * StandardDeviation
+        self.wall_distance = np.max(self.com.values) + (2 * self.com.stdev)
+
+    def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX",
+              debug=False):
+        """Writes out the Flat Bottom COM restraint.
+
+        Input
+        -----
+        frame : int
+            index of frame to write out, will default to frame closes to mean.
+        path : str
+            path to location where files should be written.
+        force_constant : float
+            strength of the COM restraint [10.0 kcal mol^-1 A^-2]
+        outtype : str
+            type of restraint to write, for now only "GMX" is accepted.
+        debug : bool
+            option to turn on extra printing options to examine COM distances
+
+        TODO
+        ----
+        * pmemd.cuda support COM distance restraints - this should be easy
+          enough to implement.
+        """
+        # Set implemented writers and required attributes
+        self.implemented_writers = ['GMX', ]
+        self.required_attributes = ['wall_distance', ]
+
+        frame, dirpath = super(FlatBottomRestraint, self).write(frame, path,
+                                                                outtype)
 
         self._write_gmx(index=frame, path=dirpath,
                         force_constant=force_constant, debug=debug)
@@ -509,31 +575,6 @@ class FlatBottomRestraint:
                                        pull_coord_ks=coord_ks,
                                        pull_coord_kBs=coord_kBs)
 
-    @staticmethod
-    def _get_nearest_com_atom(atomgroup):
-        """Helper function to find the atom in an atomgroup which is closest
-        to its center of mass
-
-        Paramters
-        ---------
-        atomgroup : MDAnalysis.AtomGroup
-            AtomGroup of the set of atoms to analyze.
-
-        Returns
-        -------
-        atom_ix : int
-            0 based index of the atom nearest to the center of mass.
-        """
-        com = atomgroup.center_of_mass()
-        distances = np.zeros(len(atomgroup.atoms))
-
-        for i, atom in enumerate(atomgroup.atoms):
-            distances[i] = np.linalg.norm(com - atom.position)
-
-        atom_ix = int(atomgroup.atoms[np.argmin(distances)].index)
-
-        return atom_ix
-
     def standard_state(self, wall_distance=None, temperature=298.15,
                        calc_type="analytical"):
         """Reports the standard state volume correction for the flat bottom
@@ -580,6 +621,149 @@ class FlatBottomRestraint:
 
         volume = 4/3 * np.pi * (wall_distance**3)
         dG = Gas_K * temperature * np.log(volume/StandardV)
+
+        return dG
+
+
+class HarmonicRestraint(BaseCOMDistanceRestraint):
+    """A class to store and analyze the COM distances required for a
+    two group COM harmonic restraint"""
+
+    def analyze(self):
+        """Function to analyze the COM object data"""
+        self.com.analyze()
+        self.abs_deviation = np.absolute(self.com.mean - self.com.values)
+        self.min_frame = self.abs_deviation.argmin()
+        self.min_abs_deviation = np.min(self.abs_deviation)
+        self.min_distance = self.com.values[self.min_frame]
+
+    def write(self, frame=None, path=None, force_constant=10.0, outtype="GMX",
+              debug=False):
+        """Writes out the Harmonic COM restraint.
+
+        Input
+        -----
+        frame : int
+            index of frame to write out, will default to frame closes to mean.
+        path : str
+            path to location where files should be written.
+        force_constant : float
+            strength of the COM restraint [10.0 kcal mol^-1 A^-2]
+        outtype : str
+            type of restraint to write, for now only "GMX" is accepted.
+        debug : bool
+            option to turn on extra printing options to examine COM distances
+
+        TODO
+        ----
+        * pmemd.cuda support COM distance restraints - this should be easy
+          enough to implement.
+        """
+        self.implemented_writers = ['GMX', ]
+        self.required_attributes = ['min_distance', ]
+
+        frame, dirpath = super(HarmonicRestraint, self).write(frame, path,
+                                                              outtype)
+
+        self._write_gmx(index=frame, path=dirpath,
+                        force_constant=force_constant, debug=debug)
+
+    def _write_gmx(self, index, path, force_constant, debug):
+        """Writes out a COM harmonic restraint for the GMX pull code"""
+        # seek chosen frame
+        self.atomgroups[0].universe.trajectory[index]
+        self.atomgroups[0].universe.atoms.write(
+            f'{path}/ClosestRestraintFrame.gro')
+
+        # write out the index files
+        ndx_file = f'{path}/harmonic_index.ndx'
+        with mda_gmx.SelectionWriter(ndx_file, mode='w') as ndx:
+            # The entire system
+            ndx.write(self.atomgroups[0].universe.atoms, name='System')
+            ndx.write(self.atomgroups[0], name=self.atomgroup_names[0])
+            ndx.write(self.atomgroups[1], name=self.atomgroup_names[1])
+
+        # Get the atoms nearest to the COM of each atomgroup
+        com_atoms = []
+        for ag in self.atomgroups:
+            com_atoms.append(self._get_nearest_com_atom(ag))
+
+        # do MDP writing here
+        with open(f'{path}/harmonic.mdp', 'w') as rfile:
+            # write the header
+            if debug:
+                writers._write_pull_header(rfile, pull=True,
+                                           pull_print_com=True,
+                                           pull_nstxout=100,
+                                           pull_pbc_ref_prev_step_com=True)
+            else:
+                writers._write_pull_header(rfile, pull=True,
+                                           pull_pbc_ref_prev_step_com=True)
+
+            # write the pull group settings
+            writers._write_pull_groups(rfile, group_names=self.atomgroup_names,
+                                       group_pbc_atoms=com_atoms)
+
+            # write the pull coordinate settings
+            coord_types = ['umbrella', ]
+            coord_geoms = ['distance', ]
+            coord_groups = [(1, 2), ]
+            coord_dims = ['Y Y Y', ]
+            coord_starts = [False, ]
+            coord_inits = [self.min_distance / 10, ]
+            coord_rates = [0, ]
+            coord_ks = [0, ]
+            coord_kBs = [force_constant * 4.184 * 100, ]
+            writers._write_pull_coords(rfile,
+                                       pull_coord_types=coord_types,
+                                       pull_coord_geometries=coord_geoms,
+                                       pull_coord_groups=coord_groups,
+                                       pull_coord_dims=coord_dims,
+                                       pull_coord_starts=coord_starts,
+                                       pull_coord_inits=coord_inits,
+                                       pull_coord_rates=coord_rates,
+                                       pull_coord_ks=coord_ks,
+                                       pull_coord_kBs=coord_kBs)
+
+    def standard_state(self, force_constant=10.0, temperature=298.15,
+                       calc_type="analytical"):
+        """Reports the standard state volume correction for the com harmonic
+        distance restraint.
+
+        Input
+        -----
+        force_constant : float
+            strength of the COM restraint [10.0 kcal mol^-1 A^-2]
+        temperature : float
+            System temperature in Kelvins [298.15]
+        calc_type : str
+            Method by which to obtain the standard state correction, currently
+            only analytical corrections are supported. ["analytical"]
+        """
+        if calc_type != "analytical":
+            raise NotImplementedError(f"{calc_type} is not implemented.")
+        else:
+            return self._analytical_energy(force_constant, temperature)
+
+    @staticmethod
+    def _analytical_energy(force_constant, temperature):
+        """Get the dG standard volume correction for a harmonic restraint.
+
+        Parameters
+        ----------
+        force_constant : float
+            strength of the COM restraint in kcal mol^-1 A^-2.
+        temperature : float
+            System temperature in Kelvin.
+        """
+        Gas_K = (8.314472*0.001) / 4.184  # Gas constant kcal/mol/K
+        StandardV = 1660.539  # standard volume in A^3
+
+        KT = Gas_K * temperature
+
+        inner = ((np.pi * KT) / force_constant) ** 3/2
+
+        dG = KT * np.log((3 / StandardV) * inner)
 
         return dG
 
