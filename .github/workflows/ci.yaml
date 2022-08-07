@@ -16,7 +16,7 @@ defaults:
     shell: bash -l {0}
 
 env:
-  CONDA_DEPS: "'MDAnalysis<2.0.0' MDAnalysisTests pytest pytest-cov codecov"
+  CONDA_DEPS: "'MDAnalysis<2.0.0' MDAnalysisTests 'numpy<1.23' pytest pytest-cov codecov"
 
 jobs:
   tests:
@@ -42,11 +42,12 @@ jobs:
           auto-update-conda: true
           channels: conda-forge
           add-pip-as-python-dependency: true
+          mamba-version: "*"
           architecture: x64
 
       - name: install_deps
         run: |
-          conda install ${{ env.CONDA_DEPS }}
+          mamba install ${{ env.CONDA_DEPS }}
 
       - name: check_setup
         run: |
