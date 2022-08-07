@@ -46,10 +46,10 @@ setup(
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
-    install_requires=["MDAnalysis>=1.0.0,<2.0.0", "numpy", "scipy<1.8", "matplotlib"],
+    install_requires=["MDAnalysis>=1.0.0", "numpy", "scipy<1.8", "matplotlib"],
     # Required packages, pulls from pip if needed; do not use for Conda deployment
     platforms=['Linux'],
-    python_requires=">=3.6",        
+    python_requires=">=3.8",        
     # Python version restrictions
     # Manual control if final package is compressible or not, set False to prevent the .egg from being made
     # zip_safe=False,

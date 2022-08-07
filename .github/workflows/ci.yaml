@@ -16,7 +16,7 @@ defaults:
     shell: bash -l {0}
 
 env:
-  CONDA_DEPS: "'MDAnalysis<2.0.0' MDAnalysisTests numpy 'scipy<1.8' pytest pytest-cov 'hypothesis<6.2' codecov"
+  CONDA_DEPS: "'MDAnalysis' MDAnalysisTests numpy 'scipy<1.8' pytest pytest-cov 'hypothesis<6.2' codecov"
 
 jobs:
   tests:
@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        python-version: [3.6, 3.7, 3.8]
+        python-version: ["3.8", "3.9", "3.10"]
 
     env:
       CYTHON_TRACE_NOGIL: 1
