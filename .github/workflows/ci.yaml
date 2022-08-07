@@ -16,7 +16,7 @@ defaults:
     shell: bash -l {0}
 
 env:
-  CONDA_DEPS: "'MDAnalysis<2.0.0' MDAnalysisTests 'numpy<1.23' pytest pytest-cov codecov"
+  CONDA_DEPS: "'MDAnalysis<2.0.0' MDAnalysisTests 'numpy<1.22' pytest pytest-cov codecov"
 
 jobs:
   tests:
