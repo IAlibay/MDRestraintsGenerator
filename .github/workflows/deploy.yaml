@@ -1,0 +1,98 @@
+name: Build and upload to PyPI
+
+on:
+  push:
+    tags:
+      - "*"
+  release:
+    types:
+      - published
+
+
+concurrency:
+  group: "${{ github.ref }}-${{ github.head_ref }}-${{ github.workflow }}"
+  cancel-in-progress: true
+
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+
+jobs:
+  build_wheels:
+    environment: deploy
+    if: "github.repository == 'IAlibay/MDRestraintsGenerator'"
+    name: Build pure Python wheel
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup_miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.8
+          auto-update-conda: true
+          add-pip-as-python-dependency: true
+          architecture: x64
+
+      - name: install_deps
+        run: |
+          python -m pip install build
+ 
+      - name: build
+        run: |
+          python -m build --sdist --wheel --outdir dist/
+ 
+      - name: publish_testpypi
+        # Upload to testpypi on every tag
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: publish_pypi
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  test_testpypi:
+    if: |
+      github.repository == 'IAlibay/MDRestraintsGenerator' &&
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/package'))
+    name: testpypi check
+    runs-on: ${{ matrix.os }}
+    needs: build_wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.6", "3.7", "3.8"]
+    env:
+      MPLBACKEND: agg
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: setup_miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          auto-update-conda: true
+          channel-priority: flexible
+          channels: conda-forge
+          add-pip-as-python-dependency: true
+          architecture: x64
+
+      - name: install_test_deps
+        run: |
+          pip install pytest pytest-xdist "hypothesis<6.2"
+
+      - name: pip_install
+        run: |
+          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple MDRestraintsGenerator
