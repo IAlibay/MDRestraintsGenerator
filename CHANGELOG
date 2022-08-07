@@ -3,9 +3,11 @@ MDRestraints Generator CHANGELOG
 AUTHORS: IAlibay
 
 
-* 0.2.0 : ??/??/????
+* 0.2.0 : 07/08/2022
 
 Fixes
+  * Caps MDAnalysis support at 2.0.0 for now.
+  * Add experimental support for COM based restraints (PR #36 and #37)
   * capped_distance call in _search_capped now accounts for box dimensions
     (PR #35)
 
