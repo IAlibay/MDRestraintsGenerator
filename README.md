@@ -9,19 +9,35 @@ MDRestraintsGenerator
 
 A framework for generating restraints for MD simulations (from MD simulations).
 
-The code currently only looks at BoreschRestraints, but we aim to extend to:
+The code currently implements a means of deriving Boresch-style restraints,
+with exporters for GROMACS. There is also experimental code for COM based
+restraints (i.e. harmonic distance or hard wall), which export to the gromacs
+pull code. These experimental implementations have yet to be completely tested.
 
-- Hardwall restraints
-- Harmonic restraints
+In future implementations we aim to expand to other MD engines (notably OpenMM
+support will be coming in the near future as part of efforts to support
+the work done by OpenFE).
+
+We also aim to eventually implement the following restraint types:
+
 - Attach Pull Restraint style restraints
-- Complex multidimensional restraints
+- Arbitrary multidimensional restraints (will require API overhaul)
 
 Note: This is non-mature code, a lot is left to do and
 major changes will happen at any time.
 
 ## Installation
 
-Installation is currently only possible from source. This can be done in the following manner:
+Installation can either be done via PyPi or from source.
+
+To install the latest release via PyPi do:
+
+```
+pip install MDRestraintsGenerator
+```
+
+Installing the latest development code from source can be done using the
+following:
 
 ```
 git clone https://github.com/bigginlab/MDRestraintsGenerator.git
@@ -31,7 +47,7 @@ pip install .
 
 ## How to use
 
-The code currently only implements a means of deriving Boresch restraints for GROMACS simulations.
+The code currently focuses on implementing a means of deriving Boresch restraints for GROMACS simulations.
 To achieve this, the following underlying methods are provided:
 
   1) A function to pick stable points in ligands for restraint attachment
@@ -81,8 +97,12 @@ pytest -v MDRestraintsGenerator.tests
 
 Copyright (c) 2020, Irfan Alibay
 
-
 #### Acknowledgements
+
+To cite this code, please add refer the following:
+
+  - https://doi.org/10.26434/chemrxiv-2022-cw2kq-v3
+  - https://doi.org/10.5281/zenodo.6972482
  
 Project based on the 
 [Computational Molecular Science Python Cookiecutter](https://github.com/molssi/cookiecutter-cms) version 1.3.
