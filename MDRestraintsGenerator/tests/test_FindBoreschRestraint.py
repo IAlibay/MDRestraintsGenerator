@@ -234,5 +234,5 @@ def test_boresch_missing_bonds_error(u_nobonds):
     atom_set = [([2606, 2607, 2609], [1563, 1569, 1571]),]
 
     errmsg = "Finding Boresch-like restraints requires bond"
-    with pytest.raises(AttributeError, errmsg=errmsg):
+    with pytest.raises(AttributeError, match=errmsg):
         FindBoreschRestraint(u_nobonds, atomset)

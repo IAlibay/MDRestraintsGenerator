@@ -107,7 +107,7 @@ def test_findhostatoms_nobonds_err(u_nobonds):
     l_atom = 2611
     errmsg = "Finding host atoms requires bond information"
     with pytest.raises(AttributeError, match=errmsg):
-        search.FindHostAtoms(u, l_atom)
+        search.FindHostAtoms(u_nobonds, l_atom)
 
 
 def test_findhostatoms_manyatoms_err(u):
