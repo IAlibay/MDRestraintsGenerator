@@ -119,8 +119,8 @@ class FindHarmonicRestraint(FindFlatBottomRestraint):
 
 
 class FindBoreschRestraint(AnalysisBase):
-    """MDAnalysis.analysis.AnalysisBase derived class to generate a Boresch
-    restraint from a simulation
+    """MDAnalysis.analysis.AnalysisBase derived class to generate a
+    Boresch-style restraint from a simulation
 
     Attributes
     ----------
@@ -130,6 +130,14 @@ class FindBoreschRestraint(AnalysisBase):
           * Plots of the Boresch restraint components via :meth:`plot`
           * Restrained simulation input files via :meth:`write`
           * Standard state correction via :meth:`standard_state`
+
+    Notes
+    -----
+    In order to identify potential Boresch-style restraints, the
+    :class:`MDAnalysis.Universe` must have bond information. Ideally
+    this should be obtained via a topology input which contains bonds
+    (e.g. TPR, PRM7, ITP). Otherwise the `guess_bonds` method can be used
+    although this can be a bit risky.
     """
     def __init__(self, atomgroup, atom_set,
                  force_constant=10.0, **kwargs):
@@ -160,6 +168,14 @@ class FindBoreschRestraint(AnalysisBase):
         """
         super(FindBoreschRestraint, self).__init__(
                 atomgroup.universe.trajectory, **kwargs)
+
+        if not hasattr(atomgroup, 'bonds'):
+            errmsg = ('Finding Boresch-like restraints requires bond '
+                      'information please use a topology with bond '
+                      'information defined or use `guess_bonds` (at your own '
+                      'risks!)')
+            raise AttributeError(errmsg)
+
         self.atomgroup = atomgroup
         self.atom_set = atom_set
         self.force_constant = force_constant

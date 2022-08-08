@@ -4,24 +4,41 @@ MDRestraintsGenerator
 ![GH Actions CI](https://github.com/IAlibay/MDRestraintsGenerator/actions/workflows/ci.yaml/badge.svg)
 [![codecov](https://codecov.io/gh/IAlibay/MDRestraintsGenerator/branch/master/graph/badge.svg)](https://codecov.io/gh/Bigginlab/MDRestraintsGenerator/branch/master)
 [![DOI](https://zenodo.org/badge/185426662.svg)](https://zenodo.org/badge/latestdoi/185426662)
+[![Powered by MDAnalysis](https://img.shields.io/badge/powered%20by-MDAnalysis-orange.svg?logoWidth=16&logo=data:image/x-icon;base64,AAABAAEAEBAAAAEAIAAoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJD+XwCY/fEAkf3uAJf97wGT/a+HfHaoiIWE7n9/f+6Hh4fvgICAjwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACT/yYAlP//AJ///wCg//8JjvOchXly1oaGhv+Ghob/j4+P/39/f3IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJH8aQCY/8wAkv2kfY+elJ6al/yVlZX7iIiI8H9/f7h/f38UAAAAAAAAAAAAAAAAAAAAAAAAAAB/f38egYF/noqAebF8gYaagnx3oFpUUtZpaWr/WFhY8zo6OmT///8BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAn46Ojv+Hh4b/jouJ/4iGhfcAAADnAAAA/wAAAP8AAADIAAAAAwCj/zIAnf2VAJD/PAAAAAAAAAAAAAAAAICAgNGHh4f/gICA/4SEhP+Xl5f/AwMD/wAAAP8AAAD/AAAA/wAAAB8Aov9/ALr//wCS/Z0AAAAAAAAAAAAAAACBgYGOjo6O/4mJif+Pj4//iYmJ/wAAAOAAAAD+AAAA/wAAAP8AAABhAP7+FgCi/38Axf4fAAAAAAAAAAAAAAAAiIiID4GBgYKCgoKogoB+fYSEgZhgYGDZXl5e/m9vb/9ISEjpEBAQxw8AAFQAAAAAAAAANQAAADcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjo6Mb5iYmP+cnJz/jY2N95CQkO4pKSn/AAAA7gAAAP0AAAD7AAAAhgAAAAEAAAAAAAAAAACL/gsAkv2uAJX/QQAAAAB9fX3egoKC/4CAgP+NjY3/c3Nz+wAAAP8AAAD/AAAA/wAAAPUAAAAcAAAAAAAAAAAAnP4NAJL9rgCR/0YAAAAAfX19w4ODg/98fHz/i4uL/4qKivwAAAD/AAAA/wAAAP8AAAD1AAAAGwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALGxsVyqqqr/mpqa/6mpqf9KSUn/AAAA5QAAAPkAAAD5AAAAhQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADkUFBSuZ2dn/3V1df8uLi7bAAAATgBGfyQAAAA2AAAAMwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0AAADoAAAA/wAAAP8AAAD/AAAAWgC3/2AAnv3eAJ/+dgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9AAAA/wAAAP8AAAD/AAAA/wAKDzEAnP3WAKn//wCS/OgAf/8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIQAAANwAAADtAAAA7QAAAMAAABUMAJn9gwCe/e0Aj/2LAP//AQAAAAAAAAAA)](https://www.mdanalysis.org)
 
 # MDRestraintsGenerator
 
 A framework for generating restraints for MD simulations (from MD simulations).
 
-The code currently only looks at BoreschRestraints, but we aim to extend to:
+The code currently implements a means of deriving Boresch-style restraints,
+with exporters for GROMACS. There is also experimental code for COM based
+restraints (i.e. harmonic distance or hard wall), which export to the gromacs
+pull code. These experimental implementations have yet to be completely tested.
 
-- Hardwall restraints
-- Harmonic restraints
+In future implementations we aim to expand to other MD engines (notably OpenMM
+support will be coming in the near future as part of efforts to support
+the work done by OpenFE).
+
+We also aim to eventually implement the following restraint types:
+
 - Attach Pull Restraint style restraints
-- Complex multidimensional restraints
+- Arbitrary multidimensional restraints (will require API overhaul)
 
 Note: This is non-mature code, a lot is left to do and
 major changes will happen at any time.
 
 ## Installation
 
-Installation is currently only possible from source. This can be done in the following manner:
+Installation can either be done via PyPi or from source.
+
+To install the latest release via PyPi do:
+
+```
+pip install MDRestraintsGenerator
+```
+
+Installing the latest development code from source can be done using the
+following:
 
 ```
 git clone https://github.com/bigginlab/MDRestraintsGenerator.git
@@ -31,7 +48,7 @@ pip install .
 
 ## How to use
 
-The code currently only implements a means of deriving Boresch restraints for GROMACS simulations.
+The code currently focuses on implementing a means of deriving Boresch restraints for GROMACS simulations.
 To achieve this, the following underlying methods are provided:
 
   1) A function to pick stable points in ligands for restraint attachment
@@ -81,8 +98,12 @@ pytest -v MDRestraintsGenerator.tests
 
 Copyright (c) 2020, Irfan Alibay
 
-
 #### Acknowledgements
+
+To cite this code, please add refer the following:
+
+  - https://doi.org/10.26434/chemrxiv-2022-cw2kq-v3
+  - https://doi.org/10.5281/zenodo.6972482
  
 Project based on the 
 [Computational Molecular Science Python Cookiecutter](https://github.com/molssi/cookiecutter-cms) version 1.3.

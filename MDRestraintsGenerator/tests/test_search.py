@@ -3,15 +3,20 @@ Unit and regression test for the MDRestraintsGenerator package.
 """
 
 # Import package, test suite, and other packages as needed
+import pytest
 import MDAnalysis as mda
 from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO
-import pytest
 
 
 @pytest.fixture(scope='module')
 def u():
     return mda.Universe(T4_TPR, T4_XTC)
+
+
+@pytest.fixture(scope='module')
+def u_nobonds():
+    return mda.Universe(T4_OGRO, T4_XTC)
 
 
 def test_no_host_anchors(u):
@@ -96,6 +101,13 @@ def test_findhostatoms_names(u):
                      f'(bonded index {atoms[2]})')
         assert u.select_atoms(selstring)
         assert u.atoms[atoms[2]].name == "N"
+
+
+def test_findhostatoms_nobonds_err(u_nobonds):
+    l_atom = 2611
+    errmsg = "Finding host atoms requires bond information"
+    with pytest.raises(AttributeError, match=errmsg):
+        search.FindHostAtoms(u_nobonds, l_atom)
 
 
 def test_findhostatoms_manyatoms_err(u):
