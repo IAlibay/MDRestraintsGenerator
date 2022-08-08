@@ -168,6 +168,14 @@ class FindBoreschRestraint(AnalysisBase):
         """
         super(FindBoreschRestraint, self).__init__(
                 atomgroup.universe.trajectory, **kwargs)
+
+        if not hasattr(atomgroup, 'bonds'):
+            errmsg = ('Finding Boresch-like restraints requires bond '
+                      'information please use a topology with bond '
+                      'information defined or use `guess_bonds` (at your own '
+                      'risks!)')
+            raise AttributeError(errmsg)
+
         self.atomgroup = atomgroup
         self.atom_set = atom_set
         self.force_constant = force_constant

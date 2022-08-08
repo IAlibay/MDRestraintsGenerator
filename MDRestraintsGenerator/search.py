@@ -303,7 +303,7 @@ class FindHostAtoms(AnalysisBase):
         super(FindHostAtoms, self).__init__(atomgroup.universe.trajectory,
                                             **kwargs)
 
-        if not hasattr(atomgroup, bonds):
+        if not hasattr(atomgroup, 'bonds'):
             errmsg = ('Finding host atoms requires bond information '
                       'please use a topology with bond information defined '
                       'or use `guess_bonds` (at your own risks!)')

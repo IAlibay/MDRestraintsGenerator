@@ -5,7 +5,6 @@ Unit and regression test for the MDRestraintsGenerator package.
 # Import package, test suite, and other packages as needed
 import pytest
 import MDAnalysis as mda
-from MDAnalysisTests.datafiles import GRO, XTC
 from MDRestraintsGenerator import search
 from .datafiles import T4_TPR, T4_XTC, T4_OGRO
 
@@ -17,7 +16,7 @@ def u():
 
 @pytest.fixture(scope='module')
 def u_nobonds():
-    return mda.Universe(GRO, XTC)
+    return mda.Universe(T4_OGRO, T4_XTC)
 
 
 def test_no_host_anchors(u):

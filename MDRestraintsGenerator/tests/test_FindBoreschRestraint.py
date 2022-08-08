@@ -27,6 +27,11 @@ def u_guest():
     return mda.Universe(CB8_TPR, CB8_XTC)
 
 
+@pytest.fixture(scope='module')
+def u_nobonds()
+    return mda.Universe(T4_OGRO, T4_XTC)
+
+
 def test_basic_regression_oldhostsearch(tmpdir, u):
     """Regression test to check we get the same answer"""
     l_atoms = [2611, 2609, 2607]
@@ -189,11 +194,11 @@ def test_basic_regression_ligand_protein_search(u):
                  [2606, 1563, 1569, 1571])
 
 
-def test_basic_regression_ligand_protein_search_reindex(u):
+def test_basic_regression_ligand_protein_search_reindex(u_reindex):
     """Regression test to check we get the same answer on a ligand search
     Using tpr_resid_from_one=False"""
 
-    ligand_atoms = search.find_ligand_atoms(u)
+    ligand_atoms = search.find_ligand_atoms(u_reindex)
 
     assert ligand_atoms == [[2606, 2607, 2609], [2604, 2605, 2603],
                             [2607, 2606, 2608]]
@@ -201,11 +206,11 @@ def test_basic_regression_ligand_protein_search_reindex(u):
     atom_set = []
 
     for l_atoms in ligand_atoms:
-        psearch = search.FindHostAtoms(u, l_atoms[0])
+        psearch = search.FindHostAtoms(u_reindex, l_atoms[0])
         psearch.run()
         atom_set.extend([(l_atoms, p) for p in psearch.host_atoms])
 
-    boresch = FindBoreschRestraint(u, atom_set)
+    boresch = FindBoreschRestraint(u_reindex, atom_set)
 
     boresch.run()
 
@@ -221,3 +226,13 @@ def test_basic_regression_ligand_protein_search_reindex(u):
                  [2607, 2606, 1563, 1569])
     assert_equal(boresch.restraint.dihedrals[2].atomgroup.atoms.ix,
                  [2606, 1563, 1569, 1571])
+
+
+def test_boresch_missing_bonds_error(u_nobonds):
+    """Checks that an error is raised if you don't have any bonds in your
+    input Universe"""
+    atom_set = [([2606, 2607, 2609], [1563, 1569, 1571]),]
+
+    errmsg = "Finding Boresch-like restraints requires bond"
+    with pytest.raises(AttributeError, errmsg=errmsg):
+        FindBoreschRestraint(u_nobonds, atomset)
