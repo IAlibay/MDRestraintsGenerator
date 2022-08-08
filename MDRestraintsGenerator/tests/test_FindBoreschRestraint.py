@@ -235,4 +235,4 @@ def test_boresch_missing_bonds_error(u_nobonds):
 
     errmsg = "Finding Boresch-like restraints requires bond"
     with pytest.raises(AttributeError, match=errmsg):
-        FindBoreschRestraint(u_nobonds, atomset)
+        FindBoreschRestraint(u_nobonds, atom_set)
