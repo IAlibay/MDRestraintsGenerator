@@ -28,7 +28,7 @@ def u_guest():
 
 
 @pytest.fixture(scope='module')
-def u_nobonds()
+def u_nobonds():
     return mda.Universe(T4_OGRO, T4_XTC)
 
 
