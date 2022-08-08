@@ -290,12 +290,25 @@ class FindHostAtoms(AnalysisBase):
           it exceeds the ``search_max_cutoff`` value. If it fails to find a
           number of host anchors >= ``num_restraints`` it will throw a user
           warning.
+        * The :class:`MDAnalysis.Universe` object requires bonds to be defined.
+    
+    Raises
+    ------
+    AttributeError
+        If the input :class:`MDAnalysis.AtomGroup` doesn't have bonds defined.
     """
     def __init__(self, atomgroup, l_atom, p_selection="protein and name CA",
                  num_restraints=3, protein_routine=True,
                  search_init_cutoff=5, search_max_cutoff=9, **kwargs):
         super(FindHostAtoms, self).__init__(atomgroup.universe.trajectory,
                                             **kwargs)
+
+        if not hasattr(atomgroup, bonds):
+            errmsg = ('Finding host atoms requires bond information '
+                      'please use a topology with bond information defined '
+                      'or use `guess_bonds` (at your own risks!)')
+            raise AttributeError(errmsg)
+
         self.atomgroup = atomgroup
         self.l_atom = l_atom
         self.p_selection = p_selection
