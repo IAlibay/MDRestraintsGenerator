@@ -98,7 +98,7 @@ Copyright (c) 2020, Irfan Alibay
 
 #### Acknowledgements
 
-To cite this code, please add refer the following:
+To cite this code, please refer the following:
 
   - https://doi.org/10.26434/chemrxiv-2022-cw2kq-v3
   - https://doi.org/10.5281/zenodo.6972482
