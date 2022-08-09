@@ -24,7 +24,7 @@ jobs:
     environment: deploy
     if: |
       github.repository == 'IAlibay/MDRestraintsGenerator' && 
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/package'))
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     name: Build pure Python wheel
     runs-on: ubuntu-latest
 
@@ -92,7 +92,7 @@ jobs:
   test_testpypi:
     if: |
       github.repository == 'IAlibay/MDRestraintsGenerator' &&
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/package'))
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     name: testpypi check
     runs-on: ${{ matrix.os }}
     needs: build_wheels_testpypi
