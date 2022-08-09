@@ -9,5 +9,9 @@ __pycache__/
 
 __data__/
 
+# dist
+
+dist/*
+
 # pip stuff
 MDRestraintsGenerator.egg-info
