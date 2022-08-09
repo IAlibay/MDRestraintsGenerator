@@ -20,9 +20,11 @@ defaults:
 
 
 jobs:
-  build_wheels:
+  build_wheels_testpypi:
     environment: deploy
-    if: "github.repository == 'IAlibay/MDRestraintsGenerator'"
+    if: |
+      github.repository == 'IAlibay/MDRestraintsGenerator' && 
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/package'))
     name: Build pure Python wheel
     runs-on: ubuntu-latest
 
@@ -48,25 +50,52 @@ jobs:
           python -m build --sdist --wheel --outdir dist/
  
       - name: publish_testpypi
-        # Upload to testpypi on every tag
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
 
+  build_wheels_pypi:
+    environment: deploy
+    if: |
+      github.repository == 'IAlibay/MDRestraintsGenerator' &&
+      (github.event_name == 'release' && github.event.action == 'published')
+    name: Build pure Python wheel
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup_miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.8
+          auto-update-conda: true
+          add-pip-as-python-dependency: true
+          architecture: x64
+
+      - name: install_deps
+        run: |
+          python -m pip install build
+
+      - name: build
+        run: |
+          python -m build --sdist --wheel --outdir dist/
+
       - name: publish_pypi
-        if: github.event_name == 'release' && github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
   test_testpypi:
     if: |
-      github.repository == 'IAlibay/MDRestraintsGenerator'
+      github.repository == 'IAlibay/MDRestraintsGenerator' &&
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/package'))
     name: testpypi check
     runs-on: ${{ matrix.os }}
-    # needs: build_wheels
+    needs: build_wheels_testpypi
     strategy:
       fail-fast: false
       matrix:
@@ -90,7 +119,7 @@ jobs:
 
       - name: install_test_deps
         run: |
-          pip install pytest pytest-xdist "hypothesis<6.2"
+          pip install pytest pytest-xdist
 
       - name: pip_install
         run: |
