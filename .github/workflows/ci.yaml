@@ -16,7 +16,7 @@ defaults:
     shell: bash -l {0}
 
 env:
-  CONDA_DEPS: "'MDAnalysis' MDAnalysisTests numpy scipy pytest pytest-cov codecov"
+  CONDA_DEPS: "'MDAnalysis' MDAnalysisTests numpy scipy pytest pytest-xdist pytest-cov codecov"
 
 jobs:
   tests:
@@ -60,11 +60,12 @@ jobs:
 
       - name: run_tests
         run: |
-          pytest -v --cov=MDRestraintsGenerator --cov-report=xml MDRestraintsGenerator/tests/
+          pytest -n auto -v --cov=MDRestraintsGenerator --cov-report=xml MDRestraintsGenerator/tests/
 
       - name: codecov
         uses: codecov/codecov-action@v5
         with:
           file: coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: True
           verbose: True
