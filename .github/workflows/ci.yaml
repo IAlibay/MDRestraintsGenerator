@@ -37,7 +37,8 @@ jobs:
       - name: "Setup Micromamba"
         uses: mamba-org/setup-micromamba@v2
         with:
-          environment-name: mdrg_env
+          environment-file: environment.yaml
+          environment-name: mdrg
           create-args: >-
             python=${{ matrix.python-version }}
           init-shell: bash
@@ -57,6 +58,10 @@ jobs:
       - name: install_mdrg
         run: |
           python -m pip install . --no-deps
+
+      - name: version
+        run: |
+          python -Ic "import MDRestraintsGenerator; print(MDRestraintsGenerator.__version__)"
 
       - name: run_tests
         run: |

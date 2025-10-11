@@ -1,19 +1,14 @@
-name: test
+name: mdrg
 channels: 
   - conda-forge
 dependencies:
-    # Base depends
-  - python
+  # Base depends
   - pip
   - MDAnalysis
   - matplotlib
   - scipy
-    # Testing
+  # Testing
   - pytest
   - pytest-cov
+  - pytest-xdist
   - codecov
-
-    # Pip-only installs
-  #- pip:
-  #  - codecov
-

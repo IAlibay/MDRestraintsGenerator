@@ -1,0 +1,37 @@
+[build-system]
+requires=[
+    "setuptools>=77.0.3",
+    "setuptools-scm>=8",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MDRestraintsGenerator"
+dynamic = ["version"]
+authors=[
+    {name="Irfan Alibay", email="irfan.alibay@omsf.io"},
+]
+dependencies = [
+    'MDAnalysis>2.0.0',
+    'numpy',
+    'scipy',
+    'matplotlib',
+]
+description="Enabling the use of restraints in alchemical simulations"
+readme="README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "LGPLv3"
+license-files = ["LICENSE"]
+
+[project.urls]
+"Homepage" = "https://github.com/IAlibay/MDRestraintsGenerator"
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+[tool.setuptools]
+include-package-data = true
