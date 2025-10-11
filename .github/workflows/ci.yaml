@@ -16,7 +16,7 @@ defaults:
     shell: bash -l {0}
 
 env:
-  CONDA_DEPS: "'MDAnalysis' MDAnalysisTests numpy 'scipy<1.8' pytest pytest-cov codecov"
+  CONDA_DEPS: "'MDAnalysis' MDAnalysisTests numpy scipy pytest pytest-cov codecov"
 
 jobs:
   tests:
@@ -25,29 +25,26 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        python-version: ["3.8", "3.9", "3.10"]
-
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     env:
       CYTHON_TRACE_NOGIL: 1
       MPLBACKEND: agg
       GH_OS: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
 
-      - name: setup_miniconda
-        uses: conda-incubator/setup-miniconda@v2
+      - name: "Setup Micromamba"
+        uses: mamba-org/setup-micromamba@v2
         with:
-          python-version: ${{ matrix.python-version }}
-          auto-update-conda: true
-          channels: conda-forge
-          add-pip-as-python-dependency: true
-          mamba-version: "*"
-          architecture: x64
+          environment-name: mdrg_env
+          create-args: >-
+            python=${{ matrix.python-version }}
+          init-shell: bash
 
       - name: install_deps
         run: |
-          mamba install ${{ env.CONDA_DEPS }}
+          micromamba install ${{ env.CONDA_DEPS }}
 
       - name: check_setup
         run: |
@@ -55,18 +52,18 @@ jobs:
           which python
           which conda
           which pip
-          conda info
+          micromamba list
 
       - name: install_mdrg
         run: |
-          python setup.py develop --no-deps
+          python -m pip install . --no-deps
 
       - name: run_tests
         run: |
           pytest -v --cov=MDRestraintsGenerator --cov-report=xml MDRestraintsGenerator/tests/
 
       - name: codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v5
         with:
           file: coverage.xml
           fail_ci_if_error: True
