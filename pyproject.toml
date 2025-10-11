@@ -24,7 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = "LGPLv3"
+license = "LGPL-3.0-or-later"
 license-files = ["LICENSE"]
 
 [project.urls]
